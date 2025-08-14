@@ -7,6 +7,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/habit.dart';
 import '../cubit/habit_cubit.dart';
 import '../cubit/habit_state.dart';
+import '../../../authentication/presentation/cubit/auth_cubit.dart';
+import '../../../authentication/presentation/cubit/auth_state.dart';
 
 class AddHabitPage extends StatefulWidget {
   final Habit? habitToEdit; // For editing existing habits
@@ -526,17 +528,23 @@ class _AddHabitPageState extends State<AddHabitPage> {
       // context.read<HabitCubit>().updateHabit(updatedHabit);
     } else {
       // Create new habit
-      context.read<HabitCubit>().addHabit(
-        userId: 'current_user_id', // Replace with actual user ID
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty 
-            ? null 
-            : _descriptionController.text.trim(),
-        category: _selectedCategory,
-        frequency: _selectedFrequency,
-        customDays: _selectedDays,
-        targetCount: _targetCount,
-      );
+      final authState = context.read<AuthCubit>().state;
+      if (authState is AuthAuthenticated) {
+        context.read<HabitCubit>().addHabit(
+          userId: authState.user.id,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty 
+              ? null 
+              : _descriptionController.text.trim(),
+          category: _selectedCategory,
+          frequency: _selectedFrequency,
+          customDays: _selectedDays,
+          targetCount: _targetCount,
+        );
+      } else {
+        _showErrorSnackBar('You must be logged in to create habits');
+        return;
+      }
     }
   }
 

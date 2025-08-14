@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habit_tracker_app/features/authentication/domain/entities/user.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 import 'login_page.dart';
@@ -99,7 +100,7 @@ class AuthWrapper extends StatelessWidget {
 
     // Show authenticated app if user is logged in
     if (state is AuthAuthenticated) {
-      return HomePage(user: state.user); // Main app screen
+      return HomePage(); // Main app screen
     }
 
     // Show login/register flow for all unauthenticated states
@@ -254,9 +255,8 @@ class _AuthWrapperWithRoutingState extends State<AuthWrapperWithRouting> {
                 settings: settings,
               );
             case '/home':
-              final user = settings.arguments;
               return MaterialPageRoute(
-                builder: (_) => HomePage(user: user),
+                builder: (_) => HomePage(),
                 settings: settings,
               );
             default:

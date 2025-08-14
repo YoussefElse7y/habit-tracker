@@ -33,8 +33,10 @@ import 'features/habits/presentation/cubit/habit_cubit.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
+  // dev safe, clear before re-register
   //! Features - Authentication
   // Cubit
+  
   sl.registerFactory(
     () => AuthCubit(
       loginUser: sl(),
@@ -102,7 +104,6 @@ Future<void> init() async {
   sl.registerLazySingleton<HabitRemoteDataSource>(
     () => HabitRemoteDataSourceImpl(
       firestore: sl(),
-      firebaseAuth: sl(),
     ),
   );
 
@@ -120,6 +121,6 @@ Future<void> init() async {
   sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
-  sl.registerLazySingleton(() => GoogleSignIn());
-  sl.registerLazySingleton(() => InternetConnectionChecker());
+  sl.registerLazySingleton(() => GoogleSignIn.instance);
+  sl.registerLazySingleton(() => InternetConnectionChecker.instance);
 }

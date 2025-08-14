@@ -290,12 +290,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   // Helper method to update last login time
   Future<void> _updateLastLoginTime(String userId) async {
-    await firestore
-        .collection(AppConstants.usersCollection)
-        .doc(userId)
-        .update({
+    await firestore.collection(AppConstants.usersCollection).doc(userId).set({
       'lastLoginAt': FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
   }
 
   // Helper method to handle Firebase Auth exceptions

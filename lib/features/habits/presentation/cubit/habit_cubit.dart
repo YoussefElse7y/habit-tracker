@@ -2,7 +2,6 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/repositories/habit_repository.dart';
 import '../../domain/usecases/add_habit.dart';
@@ -353,8 +352,6 @@ class HabitCubit extends Cubit<HabitState> {
       emit(HabitUpdateError(habitId, 'Habit not found'));
       return;
     }
-
-    final habit = _currentHabits[habitIndex];
     emit(const HabitLoading());
 
     final result = await habitRepository.toggleHabitActive(habitId);

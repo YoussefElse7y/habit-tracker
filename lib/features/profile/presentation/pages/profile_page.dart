@@ -617,7 +617,7 @@ class _ProfilePageState extends State<ProfilePage> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                context.read<AuthCubit>().signOut();
+                context.read<AuthCubit>().logout();
                 Navigator.pop(context); // Go back to previous screen
               },
               style: TextButton.styleFrom(

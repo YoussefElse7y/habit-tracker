@@ -23,37 +23,48 @@ class ProfileCubit extends Cubit<ProfileState> {
         _storage = storage ?? FirebaseStorage.instance,
         _imagePicker = imagePicker ?? ImagePicker(),
         super(ProfileInitial());
-
   Future<void> loadUserProfile() async {
     try {
       emit(ProfileLoading());
-      
+
       final currentUser = _firebaseAuth.currentUser;
       if (currentUser == null) {
         emit(const ProfileError(message: 'No user logged in'));
         return;
       }
 
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
+      final userDoc =
+          await _firestore.collection('users').doc(currentUser.uid).get();
 
       if (userDoc.exists) {
         final data = userDoc.data()!;
+
+        DateTime? createdAt;
+        final rawCreatedAt = data['createdAt'];
+        if (rawCreatedAt is Timestamp) {
+          createdAt = rawCreatedAt.toDate();
+        } else if (rawCreatedAt is String) {
+          createdAt = DateTime.tryParse(rawCreatedAt);
+        }
+
+        DateTime? lastLoginAt;
+        final rawLastLoginAt = data['lastLoginAt'];
+        if (rawLastLoginAt is Timestamp) {
+          lastLoginAt = rawLastLoginAt.toDate();
+        } else if (rawLastLoginAt is String) {
+          lastLoginAt = DateTime.tryParse(rawLastLoginAt);
+        }
+
         final user = User(
           id: currentUser.uid,
           email: currentUser.email ?? '',
           name: data['name'] ?? currentUser.displayName ?? '',
           profileImageUrl: data['profileImageUrl'] ?? currentUser.photoURL,
-          createdAt: DateTime.fromMillisecondsSinceEpoch(
-            data['createdAt']?.millisecondsSinceEpoch ?? DateTime.now().millisecondsSinceEpoch,
-          ),
-          lastLoginAt: data['lastLoginAt'] != null 
-              ? DateTime.fromMillisecondsSinceEpoch(data['lastLoginAt'].millisecondsSinceEpoch)
-              : null,
+          createdAt: createdAt ?? DateTime.now(),
+          lastLoginAt: lastLoginAt,
           isEmailVerified: currentUser.emailVerified,
         );
+
         emit(ProfileLoaded(user: user));
       } else {
         // Create user document if it doesn't exist
@@ -65,12 +76,13 @@ class ProfileCubit extends Cubit<ProfileState> {
           createdAt: DateTime.now(),
           isEmailVerified: currentUser.emailVerified,
         );
-        
+
         await _createUserDocument(user);
         emit(ProfileLoaded(user: user));
       }
     } catch (e) {
       emit(ProfileError(message: 'Failed to load profile: $e'));
+      print(e);
     }
   }
 
@@ -98,7 +110,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
 
       final file = File(pickedFile.path);
-      
+
       // Upload to Firebase Storage
       final storageRef = _storage
           .ref()
@@ -120,7 +132,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
       // Load updated profile
       await loadUserProfile();
-      
+
       if (state is ProfileLoaded) {
         emit(ProfileImageUploaded(
           imageUrl: downloadUrl,
@@ -153,7 +165,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
       // Reload profile
       await loadUserProfile();
-      
+
       if (state is ProfileLoaded) {
         emit(ProfileUpdateSuccess(updatedUser: (state as ProfileLoaded).user));
       }

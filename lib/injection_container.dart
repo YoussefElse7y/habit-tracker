@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,6 +31,12 @@ import 'features/habits/domain/repositories/habit_repository.dart';
 import 'features/habits/domain/usecases/add_habit.dart';
 import 'features/habits/domain/usecases/complete_habit.dart';
 import 'features/habits/presentation/cubit/habit_cubit.dart';
+
+// Profile Feature
+import 'features/profile/presentation/cubit/profile_cubit.dart';
+
+// Goals Feature
+import 'features/goals/presentation/cubit/goals_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -87,6 +95,26 @@ Future<void> init() async {
     ),
   );
 
+  //! Features - Profile
+  // Cubit
+  sl.registerFactory(
+    () => ProfileCubit(
+      firebaseAuth: sl(),
+      firestore: sl(),
+      storage: sl(),
+      imagePicker: sl(),
+    ),
+  );
+
+  //! Features - Goals
+  // Cubit
+  sl.registerFactory(
+    () => GoalsCubit(
+      firebaseAuth: sl(),
+      firestore: sl(),
+    ),
+  );
+
   // Use cases
   sl.registerLazySingleton(() => AddHabit(sl()));
   sl.registerLazySingleton(() => CompleteHabit(sl()));
@@ -121,6 +149,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
+  sl.registerLazySingleton(() => FirebaseStorage.instance);
   sl.registerLazySingleton(() => GoogleSignIn.instance);
+  sl.registerLazySingleton(() => ImagePicker());
   sl.registerLazySingleton(() => InternetConnectionChecker.instance);
 }

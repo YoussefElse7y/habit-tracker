@@ -6,6 +6,8 @@ import 'package:habit_tracker_app/features/authentication/presentation/cubit/aut
 import 'package:habit_tracker_app/features/authentication/presentation/pages/login_page.dart';
 import 'package:habit_tracker_app/features/authentication/presentation/pages/register_page.dart';
 import 'package:habit_tracker_app/features/habits/presentation/cubit/habit_cubit.dart';
+import 'package:habit_tracker_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:habit_tracker_app/features/goals/presentation/cubit/goals_cubit.dart';
 import 'firebase_options.dart';
 import 'injection_container.dart' as di;
 
@@ -33,6 +35,12 @@ class MainApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => di.sl<HabitCubit>(),
+        ),
+        BlocProvider(
+          create: (_) => di.sl<ProfileCubit>(),
+        ),
+        BlocProvider(
+          create: (_) => di.sl<GoalsCubit>(),
         ),
       ],
       child: const MaterialApp(

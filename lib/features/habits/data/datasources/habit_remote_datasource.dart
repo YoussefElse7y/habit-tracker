@@ -187,7 +187,7 @@ class HabitRemoteDataSourceImpl implements HabitRemoteDataSource {
   Future<List<HabitModel>> getTodaysHabits(String userId) async {
     try {
       final today = DateTime.now();
-      final dayName = _getDayName(today.weekday).toLowerCase();
+      _getDayName(today.weekday).toLowerCase();
       
       final querySnapshot = await firestore
           .collection(AppConstants.habitsCollection)
@@ -236,7 +236,7 @@ class HabitRemoteDataSourceImpl implements HabitRemoteDataSource {
       final longestStreak = habits.map((h) => h.longestStreak).reduce((a, b) => a > b ? a : b);
       
       // Calculate completion rate for last 30 days
-      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+      DateTime.now().subtract(const Duration(days: 30));
       final today = DateTime.now();
       
       double totalPossibleCompletions = 0;

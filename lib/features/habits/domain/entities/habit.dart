@@ -81,6 +81,47 @@ class Habit extends Equatable {
            now.month == lastCompleted.month &&
            now.day == lastCompleted.day;
   }
+   
+  // Add this copyWith method to your Habit entity class
+// File: features/habits/domain/entities/habit.dart
+
+// Add this method inside the Habit class:
+
+Habit copyWith({
+  String? id,
+  String? userId,
+  String? title,
+  String? description,
+  HabitCategory? category,
+  HabitFrequency? frequency,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  bool? isActive,
+  int? currentStreak,
+  int? longestStreak,
+  int? totalCompletions,
+  DateTime? lastCompletedAt,
+  List<String>? customDays,
+  int? targetCount,
+}) {
+  return Habit(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    category: category ?? this.category,
+    frequency: frequency ?? this.frequency,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isActive: isActive ?? this.isActive,
+    currentStreak: currentStreak ?? this.currentStreak,
+    longestStreak: longestStreak ?? this.longestStreak,
+    totalCompletions: totalCompletions ?? this.totalCompletions,
+    lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
+    customDays: customDays ?? this.customDays,
+    targetCount: targetCount ?? this.targetCount,
+  );
+}
 
   String _getDayName(int weekday) {
     switch (weekday) {

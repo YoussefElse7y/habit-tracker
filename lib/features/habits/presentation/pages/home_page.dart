@@ -53,24 +53,24 @@ class _HomePageState extends State<HomePage> {
               SliverToBoxAdapter(
                 child: _buildAppBar(),
               ),
-              
+
               // Main Content
               SliverToBoxAdapter(
                 child: Column(
                   children: [
                     // Progress Card
                     _buildProgressCard(),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Today's Habits Section
                     _buildTodayHabitsSection(),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Goals Section
                     _buildGoalsSection(),
-                    
+
                     const SizedBox(height: 100), // Bottom padding for FAB
                   ],
                 ),
@@ -80,12 +80,12 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {/*
+        onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const AddHabitPage(),
             ),
-          );*/
+          );
         },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, size: 28),
@@ -128,7 +128,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context, state) {
         int totalHabits = 0;
         int completedHabits = 0;
-        
+
         // Calculate progress from today's habits
         if (state is HabitTodayLoaded) {
           totalHabits = state.todaysHabits.length;
@@ -176,7 +176,8 @@ class _HomePageState extends State<HomePage> {
                         value: progress,
                         strokeWidth: 8,
                         backgroundColor: Colors.white.withOpacity(0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     ),
                     Center(
@@ -192,9 +193,9 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(width: 24),
-              
+
               // Progress Text
               Expanded(
                 child: Column(
@@ -220,7 +221,7 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              
+
               // Calendar Icon
               Container(
                 padding: const EdgeInsets.all(8),
@@ -273,13 +274,14 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Habits List
           BlocBuilder<HabitCubit, HabitState>(
             builder: (context, state) {
-              if (state is HabitLoading && context.read<HabitCubit>().todaysHabits.isEmpty) {
+              if (state is HabitLoading &&
+                  context.read<HabitCubit>().todaysHabits.isEmpty) {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(40.0),
@@ -287,23 +289,27 @@ class _HomePageState extends State<HomePage> {
                   ),
                 );
               }
-              
+
               if (state is HabitTodayEmpty) {
                 return _buildEmptyState(state.message);
               }
-              
+
               if (state is HabitError) {
-                return _buildErrorState(state.message, isFirestoreError: state.message.contains('permission') || state.message.contains('PERMISSION_DENIED'));
+                return _buildErrorState(state.message,
+                    isFirestoreError: state.message.contains('permission') ||
+                        state.message.contains('PERMISSION_DENIED'));
               }
-              
+
               final todaysHabits = context.read<HabitCubit>().todaysHabits;
-              
+
               if (todaysHabits.isEmpty) {
                 return _buildEmptyState('No habits for today');
               }
-              
+
               return Column(
-                children: todaysHabits.map((habit) => _buildTodayHabitCard(habit)).toList(),
+                children: todaysHabits
+                    .map((habit) => _buildTodayHabitCard(habit))
+                    .toList(),
               );
             },
           ),
@@ -317,7 +323,7 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: habit.isCompletedToday() 
+        color: habit.isCompletedToday()
             ? AppColors.secondary.withOpacity(0.1)
             : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -337,13 +343,13 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: habit.isCompletedToday() 
-                    ? AppColors.secondary 
+                color: habit.isCompletedToday()
+                    ? AppColors.secondary
                     : Colors.black87,
               ),
             ),
           ),
-          
+
           // Complete Button
           GestureDetector(
             onTap: () {
@@ -357,8 +363,8 @@ class _HomePageState extends State<HomePage> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: habit.isCompletedToday() 
-                    ? AppColors.secondary 
+                color: habit.isCompletedToday()
+                    ? AppColors.secondary
                     : Colors.transparent,
                 border: Border.all(
                   color: habit.isCompletedToday()
@@ -377,9 +383,9 @@ class _HomePageState extends State<HomePage> {
                   : null,
             ),
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // More Options
           GestureDetector(
             onTap: () {
@@ -431,9 +437,9 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Sample Goals (you can make this dynamic)
           _buildGoalCard(
             title: 'Finish 5 Philosophy Books',
@@ -441,18 +447,18 @@ class _HomePageState extends State<HomePage> {
             target: 7,
             frequency: 'Everyday',
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           _buildGoalCard(
             title: 'Sleep before 11 pm',
             current: 5,
             target: 7,
             frequency: 'Everyday',
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           _buildGoalCard(
             title: 'Finish read The Hobbits',
             current: 3,
@@ -473,7 +479,7 @@ class _HomePageState extends State<HomePage> {
     bool isPartial = false,
   }) {
     double progress = current / target;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -513,9 +519,9 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Progress Bar
           Container(
             height: 8,
@@ -534,9 +540,9 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Progress Info
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -599,9 +605,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 16),
           Text(
-            isFirestoreError 
-                ? 'Connection Error'
-                : 'Something went wrong',
+            isFirestoreError ? 'Connection Error' : 'Something went wrong',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -610,7 +614,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 8),
           Text(
-            isFirestoreError 
+            isFirestoreError
                 ? 'Please check your internet connection and try again.'
                 : error,
             textAlign: TextAlign.center,
@@ -654,13 +658,13 @@ class _HomePageState extends State<HomePage> {
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: const Text('View Details'),
-                onTap: () {/*
+                onTap: () {
                   Navigator.pop(context);
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => HabitDetailsPage(habit: habit),
                     ),
-                  );*/
+                  );
                 },
               ),
               ListTile(
@@ -683,7 +687,8 @@ class _HomePageState extends State<HomePage> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Delete Habit', style: TextStyle(color: Colors.red)),
+                title: const Text('Delete Habit',
+                    style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
                   _showDeleteConfirmation(habit);
@@ -702,7 +707,8 @@ class _HomePageState extends State<HomePage> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete Habit'),
-          content: Text('Are you sure you want to delete "${habit.title}"? This action cannot be undone.'),
+          content: Text(
+              'Are you sure you want to delete "${habit.title}"? This action cannot be undone.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -728,10 +734,20 @@ class _HomePageState extends State<HomePage> {
     final now = DateTime.now();
     final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
-    
+
     return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
 }

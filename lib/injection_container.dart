@@ -32,6 +32,15 @@ import 'features/habits/domain/usecases/add_habit.dart';
 import 'features/habits/domain/usecases/complete_habit.dart';
 import 'features/habits/presentation/cubit/habit_cubit.dart';
 
+// Achievement Feature
+import 'features/habits/data/datasources/achievement_local_datasource.dart';
+import 'features/habits/data/datasources/achievement_remote_datasource.dart';
+import 'features/habits/data/repositories/achievement_repository_impl.dart';
+import 'features/habits/domain/repositories/achievement_repository.dart';
+import 'features/habits/domain/usecases/check_achievements.dart';
+import 'features/habits/domain/usecases/get_user_stats.dart';
+import 'features/habits/presentation/cubit/achievement_cubit.dart';
+
 // Profile Feature
 import 'features/profile/presentation/cubit/profile_cubit.dart';
 
@@ -100,6 +109,38 @@ Future<void> init() async {
     () => GoalsCubit(
       firebaseAuth: sl(),
       firestore: sl(),
+    ),
+  );
+
+  // Achievement System
+  sl.registerFactory(
+    () => AchievementCubit(
+      achievementRepository: sl(),
+      checkAchievements: sl(),
+      getUserStats: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(() => CheckAchievements(sl()));
+  sl.registerLazySingleton(() => GetUserStats(sl()));
+
+  sl.registerLazySingleton<AchievementRepository>(
+    () => AchievementRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<AchievementRemoteDataSource>(
+    () => AchievementRemoteDataSourceImpl(
+      firestore: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<AchievementLocalDataSource>(
+    () => AchievementLocalDataSourceImpl(
+      sharedPreferences: sl(),
     ),
   );
 

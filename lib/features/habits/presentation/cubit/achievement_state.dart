@@ -2,6 +2,9 @@
 
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/achievement.dart';
+import '../../domain/entities/achievement_progress.dart';
+import '../../domain/entities/challenge.dart';
+import '../../domain/entities/leaderboard_entry.dart';
 import '../../domain/entities/user_stats.dart';
 
 abstract class AchievementState extends Equatable {
@@ -26,6 +29,15 @@ class AchievementChecking extends AchievementState {
 }
 
 // Success states
+class AllAchievementsLoaded extends AchievementState {
+  final List<Achievement> achievements;
+  
+  const AllAchievementsLoaded({required this.achievements});
+  
+  @override
+  List<Object?> get props => [achievements];
+}
+
 class AchievementLoaded extends AchievementState {
   final List<Achievement> achievements;
   
@@ -38,7 +50,7 @@ class AchievementLoaded extends AchievementState {
 class UserAchievementsLoaded extends AchievementState {
   final List<Achievement> achievements;
   
-  const UserAchievementsLoaded(this.achievements);
+  const UserAchievementsLoaded({required this.achievements});
   
   @override
   List<Object?> get props => [achievements];
@@ -53,13 +65,22 @@ class UserStatsLoaded extends AchievementState {
   List<Object?> get props => [stats];
 }
 
-class AchievementsUnlocked extends AchievementState {
-  final List<Achievement> newAchievements;
+class AchievementProgressLoaded extends AchievementState {
+  final List<AchievementProgress> progress;
   
-  const AchievementsUnlocked(this.newAchievements);
+  const AchievementProgressLoaded({required this.progress});
   
   @override
-  List<Object?> get props => [newAchievements];
+  List<Object?> get props => [progress];
+}
+
+class AchievementsUnlocked extends AchievementState {
+  final List<Achievement> achievements;
+  
+  const AchievementsUnlocked({required this.achievements});
+  
+  @override
+  List<Object?> get props => [achievements];
 }
 
 class AchievementCheckComplete extends AchievementState {
@@ -68,32 +89,36 @@ class AchievementCheckComplete extends AchievementState {
 
 class PointsAwarded extends AchievementState {
   final int points;
-  final String reason;
-  final int newTotal;
+  final String? reason;
+  final int? newTotal;
   
-  const PointsAwarded(this.points, this.reason, this.newTotal);
+  const PointsAwarded({required this.points, this.reason, this.newTotal});
   
   @override
   List<Object?> get props => [points, reason, newTotal];
 }
 
 class LevelUpAchieved extends AchievementState {
-  final int previousLevel;
   final int newLevel;
+  final int? previousLevel;
   
-  const LevelUpAchieved(this.previousLevel, this.newLevel);
+  const LevelUpAchieved({required this.newLevel, this.previousLevel});
   
   @override
-  List<Object?> get props => [previousLevel, newLevel];
+  List<Object?> get props => [newLevel, previousLevel];
 }
 
 class LeaderboardLoaded extends AchievementState {
-  final List<Map<String, dynamic>> leaderboard;
+  final List<LeaderboardEntry> leaderboard;
   
-  const LeaderboardLoaded(this.leaderboard);
+  const LeaderboardLoaded({required this.leaderboard});
   
   @override
   List<Object?> get props => [leaderboard];
+}
+
+class StreakRecovered extends AchievementState {
+  const StreakRecovered();
 }
 
 class StreakRecoveryOptionsLoaded extends AchievementState {
@@ -110,9 +135,9 @@ class StreakRecoveryUsed extends AchievementState {
 }
 
 class ChallengesLoaded extends AchievementState {
-  final List<Map<String, dynamic>> challenges;
+  final List<Challenge> challenges;
   
-  const ChallengesLoaded(this.challenges);
+  const ChallengesLoaded({required this.challenges});
   
   @override
   List<Object?> get props => [challenges];
@@ -127,20 +152,11 @@ class ChallengeCompleted extends AchievementState {
   List<Object?> get props => [result];
 }
 
-class AchievementProgressLoaded extends AchievementState {
-  final Map<String, int> progress;
-  
-  const AchievementProgressLoaded(this.progress);
-  
-  @override
-  List<Object?> get props => [progress];
-}
-
 // Error states
 class AchievementError extends AchievementState {
   final String message;
   
-  const AchievementError(this.message);
+  const AchievementError({required this.message});
   
   @override
   List<Object?> get props => [message];

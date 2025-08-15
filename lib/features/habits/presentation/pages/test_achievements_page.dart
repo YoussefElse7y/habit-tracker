@@ -50,7 +50,7 @@ class _TestAchievementsPageState extends State<TestAchievementsPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (state is AchievementLoaded) {
+          if (state is AllAchievementsLoaded) {
             return _buildAchievementsList(state.achievements);
           }
 

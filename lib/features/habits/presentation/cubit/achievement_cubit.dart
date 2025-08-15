@@ -6,9 +6,7 @@ import 'package:habit_tracker_app/core/usecases/usecase.dart';
 import 'package:habit_tracker_app/features/habits/presentation/cubit/achievement_state.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../domain/entities/achievement.dart';
-
 import '../../domain/entities/user_stats.dart';
-
 import '../../domain/entities/achievement_progress.dart';
 import '../../domain/entities/challenge.dart';
 import '../../domain/entities/leaderboard_entry.dart';
@@ -19,13 +17,10 @@ import '../../domain/usecases/get_achievement_progress.dart';
 import '../../domain/usecases/get_challenges.dart';
 import '../../domain/usecases/get_leaderboard.dart';
 import '../../domain/usecases/recover_streak.dart';
-
 import '../../domain/usecases/get_user_stats.dart';
 
-
 class AchievementCubit extends Cubit<AchievementState> {
-    final GetUserStats getUserStats;
-    
+  final GetUserStats getUserStats;
   final GetAllAchievements getAllAchievements;
   final CheckAchievements checkAchievements;
   final GetAchievementProgress getAchievementProgress;
@@ -33,13 +28,14 @@ class AchievementCubit extends Cubit<AchievementState> {
   final GetLeaderboard getLeaderboard;
   final RecoverStreak recoverStreak;
   final GetChallenges getChallenges;
+  
   List<AchievementProgress> _achievementProgress = [];
   List<LeaderboardEntry> _leaderboard = [];
   List<Challenge> _challenges = [];
-  
   List<Achievement> _allAchievements = [];
   List<Achievement> _unlockedAchievements = [];
- UserStats? _userStats;
+  UserStats? _userStats;
+  
   AchievementCubit({
     required this.getAllAchievements,
     required this.getUserStats,
@@ -49,14 +45,14 @@ class AchievementCubit extends Cubit<AchievementState> {
     required this.getLeaderboard,
     required this.recoverStreak,
     required this.getChallenges,
-  }) : super(AchievementInitial());
+  }) : super(const AchievementInitial());
 
   /// Load all achievements from repository
   Future<void> loadAllAchievements() async {
-    emit(AchievementLoading());
-    final result = await getAllAchievements();
+    emit(const AchievementLoading());
+    final result = await getAllAchievements(NoParams());
     result.fold(
-      (failure) => emit(AchievementError(failure.message)),
+      (failure) => emit(AchievementError(message: failure.message)),
       (achievements) {
         _allAchievements = achievements;
         emit(AllAchievementsLoaded(achievements: achievements));
@@ -66,7 +62,7 @@ class AchievementCubit extends Cubit<AchievementState> {
 
   /// Load user-specific unlocked achievements
   Future<void> loadUserAchievements() async {
-    emit(AchievementLoading());
+    emit(const AchievementLoading());
     final result = await checkAchievements.getUnlockedAchievements();
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
@@ -79,13 +75,13 @@ class AchievementCubit extends Cubit<AchievementState> {
 
   /// Load user stats (points, level, streak, etc.)
   Future<void> loadUserStats() async {
-    emit(AchievementLoading());
-    final result = await getUserStats();
+    emit(const AchievementLoading());
+    final result = await getUserStats(NoParams());
     result.fold(
-      (failure) => emit(AchievementError( failure.message)),
+      (failure) => emit(AchievementError(message: failure.message)),
       (stats) {
         _userStats = stats;
-        emit(UserStatsLoaded( stats));
+        emit(UserStatsLoaded(stats));
       },
     );
   }
@@ -95,8 +91,8 @@ class AchievementCubit extends Cubit<AchievementState> {
     if (_allAchievements.isEmpty) {
       await loadAllAchievements();
     }
-    emit(AchievementLoading());
-    final result = await getAchievementProgress();
+    emit(const AchievementLoading());
+    final result = await getAchievementProgress(NoParams());
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (progress) {
@@ -108,8 +104,8 @@ class AchievementCubit extends Cubit<AchievementState> {
 
   /// Award points and check for level-up
   Future<void> awardPointsToUser(int points) async {
-    emit(AchievementLoading());
-    final result = await awardPoints(points);
+    emit(const AchievementLoading());
+    final result = await awardPoints(AwardPointsParams(points: points));
     await result.fold(
       (failure) async => emit(AchievementError(message: failure.message)),
       (_) async {
@@ -122,8 +118,8 @@ class AchievementCubit extends Cubit<AchievementState> {
 
   /// Check and unlock new achievements
   Future<void> checkAndUnlockAchievements() async {
-    emit(AchievementLoading());
-    final result = await checkAchievements();
+    emit(const AchievementLoading());
+    final result = await checkAchievements(NoParams());
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (newAchievements) {
@@ -135,8 +131,8 @@ class AchievementCubit extends Cubit<AchievementState> {
 
   /// Load leaderboard data
   Future<void> loadLeaderboard() async {
-    emit(AchievementLoading());
-    final result = await getLeaderboard();
+    emit(const AchievementLoading());
+    final result = await getLeaderboard(NoParams());
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (leaderboard) {
@@ -148,21 +144,21 @@ class AchievementCubit extends Cubit<AchievementState> {
 
   /// Recover streak
   Future<void> recoverUserStreak() async {
-    emit(AchievementLoading());
-    final result = await recoverStreak();
+    emit(const AchievementLoading());
+    final result = await recoverStreak(NoParams());
     await result.fold(
       (failure) async => emit(AchievementError(message: failure.message)),
       (_) async {
         await loadUserStats();
-        emit(StreakRecovered());
+        emit(const StreakRecovered());
       },
     );
   }
 
   /// Load challenges
   Future<void> loadChallenges() async {
-    emit(AchievementLoading());
-    final result = await getChallenges();
+    emit(const AchievementLoading());
+    final result = await getChallenges(NoParams());
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (challenges) {
@@ -208,15 +204,15 @@ class AchievementCubit extends Cubit<AchievementState> {
     _userStats = null;
     _leaderboard = [];
     _challenges = [];
-    emit(AchievementInitial());
+    emit(const AchievementInitial());
   }
 
   Future<void> _checkLevelUp() async {
     if (_userStats == null) return;
     final currentLevel = _userStats!.currentLevel;
-    final newLevel = _calculateLevel(_userStats!.points);
+    final newLevel = _calculateLevel(_userStats!.totalPoints);
     if (newLevel > currentLevel) {
-      emit(LevelUpAchieved(newLevel: newLevel));
+      emit(LevelUpAchieved(newLevel: newLevel, previousLevel: currentLevel));
     }
   }
 

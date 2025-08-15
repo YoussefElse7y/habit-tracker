@@ -8,6 +8,7 @@ import '../cubit/habit_cubit.dart';
 import '../cubit/habit_state.dart';
 import 'add_habit_page.dart';
 import 'habit_details_page.dart';
+import 'achievements_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../goals/presentation/cubit/goals_cubit.dart';
 import '../../../goals/presentation/cubit/goals_state.dart';
@@ -207,27 +208,52 @@ class _AppBarSection extends StatelessWidget {
   }
 }
 
-// Extracted Profile Button
+// Extracted Profile and Achievements Buttons
 class _ProfileButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          shape: BoxShape.circle,
+    return Row(
+      children: [
+        // Achievements Button
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AchievementsPage()),
+          ),
+          child: Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.emoji_events,
+              color: AppColors.secondary,
+              size: 24,
+            ),
+          ),
         ),
-        child: Icon(
-          Icons.person,
-          color: AppColors.primary,
-          size: 24,
+        // Profile Button
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const ProfilePage()),
+          ),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.person,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }

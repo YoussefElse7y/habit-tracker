@@ -23,6 +23,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         _storage = storage ?? FirebaseStorage.instance,
         _imagePicker = imagePicker ?? ImagePicker(),
         super(ProfileInitial());
+        
   Future<void> loadUserProfile() async {
     try {
       emit(ProfileLoading());
@@ -82,7 +83,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
     } catch (e) {
       emit(ProfileError(message: 'Failed to load profile: $e'));
-      print(e);
+      // Removed debug print statement
     }
   }
 
@@ -141,7 +142,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
     } catch (e) {
       emit(ProfileError(message: 'Failed to upload image: $e'));
-      print('Failed to upload image: $e');
+      // Removed debug print statement
     }
   }
 

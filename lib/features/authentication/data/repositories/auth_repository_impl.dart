@@ -129,7 +129,6 @@ class AuthRepositoryImpl implements AuthRepository {
           }
         } on AuthException catch (e) {
           // If remote fails, fall back to cache
-          print('Remote getCurrentUser failed: ${e.message}, trying cache...');
         }
       }
 
@@ -155,7 +154,6 @@ class AuthRepositoryImpl implements AuthRepository {
           await remoteDataSource.logout();
         } catch (e) {
           // Don't fail logout if remote logout fails
-          print('Remote logout failed: ${e.toString()}, but local data cleared');
         }
       }
 

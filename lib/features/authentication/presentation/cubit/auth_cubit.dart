@@ -73,7 +73,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  // LOGIN with email and password
+  // LOGIN with email and password - OPTIMIZED VERSION
   Future<void> loginWithEmail({
     required String email,
     required String password,
@@ -87,24 +87,24 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) {
-        // Login failed
+        // Login failed - show error briefly then go to unauthenticated
         emit(AuthLoginError(failure.message));
         
-        // Auto-reset to unauthenticated after showing error
-        Future.delayed(const Duration(seconds: 3), () {
-          if (state is AuthLoginError) {
+        // Auto-reset to unauthenticated after showing error (shorter delay)
+        Future.delayed(const Duration(seconds: 2), () {
+          if (state is AuthLoginError && !isClosed) {
             emit(const AuthUnauthenticated());
           }
         });
       },
       (user) {
-        // Login successful
+        // Login successful - immediately go to authenticated state
         emit(AuthAuthenticated(user));
       },
     );
   }
 
-  // REGISTER with email and password
+  // REGISTER with email and password - OPTIMIZED VERSION
   Future<void> registerWithEmail({
     required String email,
     required String password,
@@ -122,23 +122,23 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) {
-        // Registration failed
+        // Registration failed - show error briefly then go to unauthenticated
         emit(AuthRegistrationError(failure.message));
         
-        // Auto-reset to unauthenticated after showing error
-        Future.delayed(const Duration(seconds: 3), () {
-          if (state is AuthRegistrationError) {
+        // Auto-reset to unauthenticated after showing error (shorter delay)
+        Future.delayed(const Duration(seconds: 2), () {
+          if (state is AuthRegistrationError && !isClosed) {
             emit(const AuthUnauthenticated());
           }
         });
       },
       (user) {
-        // Registration successful
+        // Registration successful - show success briefly then go to authenticated
         emit(AuthRegistrationSuccess(user, emailVerificationSent: true));
         
-        // Auto-transition to authenticated after 2 seconds
-        Future.delayed(const Duration(seconds: 2), () {
-          if (state is AuthRegistrationSuccess) {
+        // Auto-transition to authenticated after 1 second (shorter delay)
+        Future.delayed(const Duration(seconds: 1), () {
+          if (state is AuthRegistrationSuccess && !isClosed) {
             emit(AuthAuthenticated(user));
           }
         });
@@ -146,7 +146,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  // LOGIN with Google
+  // LOGIN with Google - OPTIMIZED VERSION
   Future<void> loginWithGoogle() async {
     emit(const AuthGoogleLoading());
 
@@ -156,8 +156,9 @@ class AuthCubit extends Cubit<AuthState> {
       (failure) {
         emit(AuthError(failure.message));
         
-        Future.delayed(const Duration(seconds: 3), () {
-          if (state is AuthError) {
+        // Auto-reset to unauthenticated after showing error (shorter delay)
+        Future.delayed(const Duration(seconds: 2), () {
+          if (state is AuthError && !isClosed) {
             emit(const AuthUnauthenticated());
           }
         });
@@ -168,7 +169,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  // LOGOUT
+  // LOGOUT - OPTIMIZED VERSION
   Future<void> logout() async {
     emit(const AuthLogoutLoading());
 
@@ -176,7 +177,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) {
-        // Even if logout fails remotely, clear local state
+        // Even if logout fails remotely, clear local state immediately
         emit(const AuthUnauthenticated());
       },
       (_) {
@@ -185,7 +186,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  // SEND PASSWORD RESET EMAIL
+  // SEND PASSWORD RESET EMAIL - OPTIMIZED VERSION
   Future<void> sendPasswordResetEmail(String email) async {
     emit(const AuthLoading());
 
@@ -195,9 +196,9 @@ class AuthCubit extends Cubit<AuthState> {
       (failure) {
         emit(AuthError(failure.message));
         
-        // Reset to unauthenticated after showing error
-        Future.delayed(const Duration(seconds: 3), () {
-          if (state is AuthError) {
+        // Reset to unauthenticated after showing error (shorter delay)
+        Future.delayed(const Duration(seconds: 2), () {
+          if (state is AuthError && !isClosed) {
             emit(const AuthUnauthenticated());
           }
         });
@@ -205,9 +206,9 @@ class AuthCubit extends Cubit<AuthState> {
       (_) {
         emit(AuthPasswordResetEmailSent(email));
         
-        // Reset to unauthenticated after showing success message
-        Future.delayed(const Duration(seconds: 3), () {
-          if (state is AuthPasswordResetEmailSent) {
+        // Reset to unauthenticated after showing success message (shorter delay)
+        Future.delayed(const Duration(seconds: 2), () {
+          if (state is AuthPasswordResetEmailSent && !isClosed) {
             emit(const AuthUnauthenticated());
           }
         });
@@ -215,7 +216,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  // SEND EMAIL VERIFICATION
+  // SEND EMAIL VERIFICATION - OPTIMIZED VERSION
   Future<void> sendEmailVerification() async {
     emit(const AuthLoading());
 
@@ -228,9 +229,9 @@ class AuthCubit extends Cubit<AuthState> {
       (_) {
         emit(const AuthEmailVerificationSent());
         
-        // Return to current user state after showing success
-        Future.delayed(const Duration(seconds: 2), () async {
-          if (state is AuthEmailVerificationSent) {
+        // Return to current user state after showing success (shorter delay)
+        Future.delayed(const Duration(seconds: 1), () async {
+          if (state is AuthEmailVerificationSent && !isClosed) {
             final userResult = await _authRepository.getCurrentUser();
             userResult.fold(
               (_) => emit(const AuthUnauthenticated()),
@@ -244,7 +245,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  // UPDATE PROFILE
+  // UPDATE PROFILE - OPTIMIZED VERSION
   Future<void> updateProfile({
     String? name,
     String? profileImageUrl,
@@ -259,9 +260,9 @@ class AuthCubit extends Cubit<AuthState> {
       (failure) {
         emit(AuthError(failure.message));
         
-        // Return to previous authenticated state after error
-        Future.delayed(const Duration(seconds: 2), () async {
-          if (state is AuthError) {
+        // Return to previous authenticated state after error (shorter delay)
+        Future.delayed(const Duration(seconds: 1), () async {
+          if (state is AuthError && !isClosed) {
             final userResult = await _authRepository.getCurrentUser();
             userResult.fold(
               (_) => emit(const AuthUnauthenticated()),
@@ -275,9 +276,9 @@ class AuthCubit extends Cubit<AuthState> {
       (updatedUser) {
         emit(AuthProfileUpdateSuccess(updatedUser));
         
-        // Transition to authenticated with updated user
-        Future.delayed(const Duration(seconds: 1), () {
-          if (state is AuthProfileUpdateSuccess) {
+        // Transition to authenticated with updated user (shorter delay)
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (state is AuthProfileUpdateSuccess && !isClosed) {
             emit(AuthAuthenticated(updatedUser));
           }
         });
@@ -285,7 +286,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  // DELETE ACCOUNT
+  // DELETE ACCOUNT - OPTIMIZED VERSION
   Future<void> deleteAccount() async {
     emit(const AuthLoading());
 
@@ -295,9 +296,9 @@ class AuthCubit extends Cubit<AuthState> {
       (failure) {
         emit(AuthError(failure.message));
         
-        // Return to authenticated state if deletion fails
-        Future.delayed(const Duration(seconds: 3), () async {
-          if (state is AuthError) {
+        // Return to authenticated state if deletion fails (shorter delay)
+        Future.delayed(const Duration(seconds: 2), () async {
+          if (state is AuthError && !isClosed) {
             final userResult = await _authRepository.getCurrentUser();
             userResult.fold(
               (_) => emit(const AuthUnauthenticated()),
@@ -311,9 +312,9 @@ class AuthCubit extends Cubit<AuthState> {
       (_) {
         emit(const AuthAccountDeletedSuccess());
         
-        // Transition to unauthenticated after showing success
-        Future.delayed(const Duration(seconds: 2), () {
-          if (state is AuthAccountDeletedSuccess) {
+        // Transition to unauthenticated after showing success (shorter delay)
+        Future.delayed(const Duration(seconds: 1), () {
+          if (state is AuthAccountDeletedSuccess && !isClosed) {
             emit(const AuthUnauthenticated());
           }
         });

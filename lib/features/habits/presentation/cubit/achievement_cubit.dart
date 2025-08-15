@@ -35,6 +35,7 @@ class AchievementCubit extends Cubit<AchievementState> {
   List<Achievement> _allAchievements = [];
   List<Achievement> _unlockedAchievements = [];
   UserStats? _userStats;
+  String? _currentUserId;
   
   AchievementCubit({
     required this.getAllAchievements,
@@ -61,9 +62,17 @@ class AchievementCubit extends Cubit<AchievementState> {
   }
 
   /// Load user-specific unlocked achievements
-  Future<void> loadUserAchievements() async {
+  Future<void> loadUserAchievements(String userId) async {
+    if (userId.isEmpty) {
+      emit(const AchievementError(message: 'User ID is required'));
+      return;
+    }
+    
     emit(const AchievementLoading());
-    final result = await checkAchievements.getUnlockedAchievements();
+    final result = await checkAchievements(CheckAchievementsParams(
+      userId: userId,
+      progressData: {},
+    ));
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (achievements) {
@@ -74,9 +83,14 @@ class AchievementCubit extends Cubit<AchievementState> {
   }
 
   /// Load user stats (points, level, streak, etc.)
-  Future<void> loadUserStats() async {
+  Future<void> loadUserStats(String userId) async {
+    if (userId.isEmpty) {
+      emit(const AchievementError(message: 'User ID is required'));
+      return;
+    }
+    
     emit(const AchievementLoading());
-    final result = await getUserStats(NoParams());
+    final result = await getUserStats(GetUserStatsParams(userId: userId));
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (stats) {
@@ -87,39 +101,74 @@ class AchievementCubit extends Cubit<AchievementState> {
   }
 
   /// Load achievement progress for current user
-  Future<void> loadAchievementProgress() async {
+  Future<void> loadAchievementProgress(String userId) async {
+    if (userId.isEmpty) {
+      emit(const AchievementError(message: 'User ID is required'));
+      return;
+    }
+    
     if (_allAchievements.isEmpty) {
       await loadAllAchievements();
     }
     emit(const AchievementLoading());
-    final result = await getAchievementProgress(NoParams());
+    final result = await getAchievementProgress(GetAchievementProgressParams(
+      userId: userId,
+      achievements: _allAchievements,
+    ));
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
-      (progress) {
-        _achievementProgress = progress;
-        emit(AchievementProgressLoaded(progress: progress));
+      (progressMap) {
+        // Convert Map<String, int> to List<AchievementProgress> for internal use
+        _achievementProgress = progressMap.entries.map((entry) {
+          return AchievementProgress(
+            id: entry.key,
+            userId: userId,
+            achievementId: entry.key,
+            currentProgress: entry.value,
+            requiredProgress: _getRequiredProgress(entry.key),
+            lastUpdated: DateTime.now(),
+          );
+        }).toList();
+        emit(AchievementProgressLoaded(progress: _achievementProgress));
       },
     );
   }
 
   /// Award points and check for level-up
-  Future<void> awardPointsToUser(int points) async {
+  Future<void> awardPointsToUser(String userId, int points, String reason) async {
+    if (userId.isEmpty) {
+      emit(const AchievementError(message: 'User ID is required'));
+      return;
+    }
+    
     emit(const AchievementLoading());
-    final result = await awardPoints(AwardPointsParams(points: points));
+    final result = await awardPoints(AwardPointsParams(
+      userId: userId,
+      points: points,
+      reason: reason,
+    ));
     await result.fold(
       (failure) async => emit(AchievementError(message: failure.message)),
-      (_) async {
-        await loadUserStats();
+      (newTotal) async {
+        await loadUserStats(userId);
         await _checkLevelUp();
-        emit(PointsAwarded(points: points));
+        emit(PointsAwarded(points: points, newTotal: newTotal, reason: reason));
       },
     );
   }
 
   /// Check and unlock new achievements
-  Future<void> checkAndUnlockAchievements() async {
+  Future<void> checkAndUnlockAchievements(String userId, Map<String, dynamic> progressData) async {
+    if (userId.isEmpty) {
+      emit(const AchievementError(message: 'User ID is required'));
+      return;
+    }
+    
     emit(const AchievementLoading());
-    final result = await checkAchievements(NoParams());
+    final result = await checkAchievements(CheckAchievementsParams(
+      userId: userId,
+      progressData: progressData,
+    ));
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (newAchievements) {
@@ -130,49 +179,165 @@ class AchievementCubit extends Cubit<AchievementState> {
   }
 
   /// Load leaderboard data
-  Future<void> loadLeaderboard() async {
+  Future<void> loadLeaderboard({String? category, int limit = 10}) async {
     emit(const AchievementLoading());
-    final result = await getLeaderboard(NoParams());
+    final result = await getLeaderboard(GetLeaderboardParams(
+      category: category,
+      limit: limit,
+    ));
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
-      (leaderboard) {
-        _leaderboard = leaderboard;
-        emit(LeaderboardLoaded(leaderboard: leaderboard));
+      (leaderboardData) {
+        // Convert Map data to LeaderboardEntry objects using your existing entity structure
+        _leaderboard = leaderboardData.map((data) {
+          return LeaderboardEntry(
+            userId: data['userId'] ?? '',
+            username: data['username'] ?? 'Unknown',
+            displayName: data['displayName'],
+            avatarUrl: data['avatarUrl'],
+            rank: data['rank'] ?? 0,
+            totalPoints: data['totalPoints'] ?? data['points'] ?? 0, // Handle both field names
+            currentLevel: data['currentLevel'] ?? data['level'] ?? 1,
+            totalCompletions: data['totalCompletions'] ?? 0,
+            currentStreak: data['currentStreak'] ?? data['streak'] ?? 0,
+            longestStreak: data['longestStreak'] ?? 0,
+            unlockedAchievements: data['unlockedAchievements'] ?? 0,
+            lastActivity: data['lastActivity'] != null 
+                ? DateTime.parse(data['lastActivity'].toString())
+                : DateTime.now(),
+            category: data['category'],
+            additionalStats: Map<String, dynamic>.from(data['additionalStats'] ?? {}),
+          );
+        }).toList();
+        emit(LeaderboardLoaded(leaderboard: _leaderboard));
       },
     );
   }
 
   /// Recover streak
-  Future<void> recoverUserStreak() async {
+  Future<void> recoverUserStreak(String userId, String habitId) async {
+    if (userId.isEmpty || habitId.isEmpty) {
+      emit(const AchievementError(message: 'User ID and Habit ID are required'));
+      return;
+    }
+    
     emit(const AchievementLoading());
-    final result = await recoverStreak(NoParams());
+    final result = await recoverStreak(RecoverStreakParams(
+      userId: userId,
+      habitId: habitId,
+    ));
     await result.fold(
       (failure) async => emit(AchievementError(message: failure.message)),
       (_) async {
-        await loadUserStats();
+        await loadUserStats(userId);
         emit(const StreakRecovered());
       },
     );
   }
 
   /// Load challenges
-  Future<void> loadChallenges() async {
+  Future<void> loadChallenges({String? timeFrame, String? category}) async {
     emit(const AchievementLoading());
-    final result = await getChallenges(NoParams());
+    final result = await getChallenges(GetChallengesParams(
+      timeFrame: timeFrame,
+      category: category,
+    ));
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
-      (challenges) {
-        _challenges = challenges;
-        emit(ChallengesLoaded(challenges: challenges));
+      (challengeData) {
+        // Convert Map data to Challenge objects
+        _challenges = challengeData.map((data) {
+          return Challenge(
+            id: data['id'] ?? '',
+            title: data['title'] ?? '',
+            description: data['description'] ?? '',
+            type: _parseEnum(data['type'], ChallengeType.values, ChallengeType.daily),
+            status: _parseEnum(data['status'], ChallengeStatus.values, ChallengeStatus.active),
+            startDate: DateTime.parse(data['startDate'] ?? DateTime.now().toIso8601String()),
+            endDate: DateTime.parse(data['endDate'] ?? DateTime.now().add(const Duration(days: 1)).toIso8601String()),
+            pointsReward: data['pointsReward'] ?? 0,
+            requirements: List<String>.from(data['requirements'] ?? []),
+            criteria: Map<String, dynamic>.from(data['criteria'] ?? {}),
+          );
+        }).toList();
+        emit(ChallengesLoaded(challenges: _challenges));
       },
     );
   }
 
-  /// Helpers
+  /// Comprehensive refresh of all data
+  Future<void> refreshAllData(String userId) async {
+    if (userId.isEmpty) {
+      emit(const AchievementError(message: 'User ID is required'));
+      return;
+    }
+    
+    _currentUserId = userId;
+    emit(const AchievementLoading());
+    
+    try {
+      // Load core data first
+      await loadAllAchievements();
+      await loadUserStats(userId);
+      
+      // Then load dependent data
+      await Future.wait([
+        loadUserAchievements(userId),
+        loadAchievementProgress(userId),
+        loadLeaderboard(),
+        loadChallenges(),
+      ]);
+      
+      // Emit success state when all is loaded
+      if (_userStats != null) {
+        emit(UserStatsLoaded(_userStats!));
+      }
+    } catch (e) {
+      emit(AchievementError(message: 'Failed to refresh data: ${e.toString()}'));
+    }
+  }
+
+  /// Helper methods for accessing cached data
   int get totalAchievements => _allAchievements.length;
   int get unlockedCount => _unlockedAchievements.length;
   double get completionPercentage =>
       totalAchievements == 0 ? 0 : (unlockedCount / totalAchievements) * 100;
+
+  UserStats? get userStats => _userStats;
+  List<Achievement> get userAchievements => _unlockedAchievements;
+  List<Achievement> get allAchievements => _allAchievements;
+  List<AchievementProgress> get progress => _achievementProgress;
+  List<LeaderboardEntry> get leaderboardEntries => _leaderboard;
+  List<Challenge> get challenges => _challenges;
+
+  /// Get achievement progress as a map for backward compatibility
+  Map<String, int> get achievementProgress {
+    if (_userStats == null) return {};
+    
+    return {
+      'currentStreak': _userStats!.currentStreak,
+      'totalCompletions': _userStats!.totalCompletions,
+      'totalHabits': _userStats!.totalHabits,
+      'totalPoints': _userStats!.totalPoints,
+    };
+  }
+
+  /// Get next achievements that are close to being unlocked
+  List<Achievement> get nextAchievableAchievements {
+    final locked = getLockedAchievements();
+    if (locked.isEmpty || _userStats == null) return [];
+    
+    // Sort by how close they are to being unlocked
+    locked.sort((a, b) {
+      final progressA = _getProgressForAchievement(a);
+      final progressB = _getProgressForAchievement(b);
+      final remainingA = (a.requirement - progressA).clamp(0, a.requirement);
+      final remainingB = (b.requirement - progressB).clamp(0, b.requirement);
+      return remainingA.compareTo(remainingB);
+    });
+    
+    return locked.take(5).toList();
+  }
 
   List<Achievement> getAchievementsByType(AchievementType type) =>
       _allAchievements.where((a) => a.type == type).toList();
@@ -181,7 +346,7 @@ class AchievementCubit extends Cubit<AchievementState> {
       _allAchievements.where((a) => a.tier == tier).toList();
 
   List<Achievement> getLockedAchievements() => _allAchievements
-      .where((a) => !_unlockedAchievements.contains(a))
+      .where((a) => !_unlockedAchievements.any((ua) => ua.id == a.id))
       .toList();
 
   Achievement? getNextAchievement() {
@@ -191,11 +356,6 @@ class AchievementCubit extends Cubit<AchievementState> {
     return locked.first;
   }
 
-  List<AchievementProgress> getProgress() => _achievementProgress;
-  UserStats? getUserStatsCached() => _userStats;
-  List<LeaderboardEntry> getLeaderboardCached() => _leaderboard;
-  List<Challenge> getChallengesCached() => _challenges;
-
   /// Reset all cached data
   void resetState() {
     _allAchievements = [];
@@ -204,9 +364,11 @@ class AchievementCubit extends Cubit<AchievementState> {
     _userStats = null;
     _leaderboard = [];
     _challenges = [];
+    _currentUserId = null;
     emit(const AchievementInitial());
   }
 
+  /// Private helper methods
   Future<void> _checkLevelUp() async {
     if (_userStats == null) return;
     final currentLevel = _userStats!.currentLevel;
@@ -221,8 +383,51 @@ class AchievementCubit extends Cubit<AchievementState> {
     int threshold = AppConstants.pointsPerLevel;
     while (points >= threshold) {
       level++;
-      threshold += AppConstants.pointsPerLevel;
+      threshold += AppConstants.pointsPerLevel * level;
     }
     return level;
+  }
+
+  int _getRequiredProgress(String achievementId) {
+    final achievement = _allAchievements.firstWhere(
+      (a) => a.id == achievementId,
+      orElse: () => Achievement(
+        id: achievementId,
+        title: '',
+        description: '',
+        iconName: '',
+        type: AchievementType.streak,
+        tier: AchievementTier.bronze,
+        requirement: 1,
+        points: 0,
+      ),
+    );
+    return achievement.requirement;
+  }
+
+  int _getProgressForAchievement(Achievement achievement) {
+    if (_userStats == null) return 0;
+    
+    switch (achievement.type) {
+      case AchievementType.streak:
+        return _userStats!.currentStreak;
+      case AchievementType.completion:
+        return _userStats!.totalCompletions;
+      case AchievementType.milestone:
+        return _userStats!.totalHabits;
+      case AchievementType.special:
+        return 0; // Special achievements have custom logic
+    }
+  }
+
+  T _parseEnum<T>(dynamic value, List<T> values, T defaultValue) {
+    if (value is String) {
+      try {
+        return values.firstWhere((e) => e.toString().split('.').last == value);
+      } catch (e) {
+        return defaultValue;
+      }
+    }
+    return defaultValue;
   }
 }

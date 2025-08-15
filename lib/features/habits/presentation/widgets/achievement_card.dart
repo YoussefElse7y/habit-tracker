@@ -1,7 +1,6 @@
 // File: features/habits/presentation/widgets/achievement_card.dart
 
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/achievement.dart';
 
 class AchievementCard extends StatelessWidget {

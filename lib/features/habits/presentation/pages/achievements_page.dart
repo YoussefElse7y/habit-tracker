@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/achievement.dart';
 import '../cubit/achievement_cubit.dart';
+import '../cubit/achievement_state.dart' as states;
 import '../widgets/achievement_card.dart';
 import '../widgets/user_stats_card.dart';
 
@@ -65,20 +66,20 @@ class _AchievementsPageState extends State<AchievementsPage>
           ],
         ),
       ),
-      body: BlocConsumer<AchievementCubit, AchievementState>(
+      body: BlocConsumer<AchievementCubit, states.AchievementState>(
         listener: (context, state) {
-          if (state is AchievementsUnlocked) {
+          if (state is states.AchievementsUnlocked) {
             _showAchievementUnlockedDialog(state.achievements);
-          } else if (state is LevelUpAchieved) {
+          } else if (state is states.LevelUpAchieved) {
             _showLevelUpDialog(state.newLevel);
-          } else if (state is PointsAwarded) {
+          } else if (state is states.PointsAwarded) {
             _showPointsAwardedSnackBar(state.points);
-          } else if (state is AchievementError) {
+          } else if (state is states.AchievementError) {
             _showErrorSnackBar(state.message);
           }
         },
         builder: (context, state) {
-          if (state is AchievementLoading) {
+          if (state is states.AchievementLoading) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -91,7 +92,7 @@ class _AchievementsPageState extends State<AchievementsPage>
             );
           }
 
-          if (state is AchievementError) {
+          if (state is states.AchievementError) {
             return _buildErrorView(state.message);
           }
 
@@ -227,7 +228,7 @@ class _AchievementsPageState extends State<AchievementsPage>
                                 ),
                               ),
                               Text(
-                                '${userStats.t} points',
+                                '${userStats.totalPoints} points',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.9),
                                   fontSize: 16,
@@ -510,15 +511,15 @@ class _AchievementsPageState extends State<AchievementsPage>
 
   int _getAchievementProgress(Achievement achievement) {
     final cubit = context.read<AchievementCubit>();
-    final progress = cubit.achievementProgress;
+    final progressMap = cubit.achievementProgress;
 
     switch (achievement.type) {
       case AchievementType.streak:
-        return progress['currentStreak'] ?? 0;
+        return progressMap['currentStreak'] ?? 0;
       case AchievementType.completion:
-        return progress['totalCompletions'] ?? 0;
+        return progressMap['totalCompletions'] ?? 0;
       case AchievementType.milestone:
-        return progress['totalHabits'] ?? 0;
+        return progressMap['totalHabits'] ?? 0;
       case AchievementType.special:
         return 0;
     }
@@ -744,15 +745,15 @@ class _AchievementsPageState extends State<AchievementsPage>
             const SizedBox(height: 16),
             
             // Progress bar for locked achievements
-            if (!isUnlocked && achievement.points > 0) ...[
+            if (!isUnlocked && achievement.requirement > 0) ...[
               Text(
-                'Progress: $currentProgress / ${achievement.points}',
+                'Progress: $currentProgress / ${achievement.requirement}',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               LinearProgressIndicator(
-                value: achievement.points > 0
-                    ? (currentProgress / achievement.points).clamp(0.0, 1.0)
+                value: achievement.requirement > 0
+                    ? (currentProgress / achievement.requirement).clamp(0.0, 1.0)
                     : 0.0,
                 backgroundColor: Colors.grey[200],
                 valueColor: AlwaysStoppedAnimation<Color>(_getTierColor(achievement.tier)),

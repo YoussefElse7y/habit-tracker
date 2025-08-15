@@ -41,10 +41,6 @@ import 'features/goals/presentation/cubit/goals_cubit.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // dev safe, clear before re-register
-  //! Features - Authentication
-  // Cubit
-  
   sl.registerFactory(
     () => AuthCubit(
       loginUser: sl(),
@@ -53,7 +49,6 @@ Future<void> init() async {
     ),
   );
 
-  // Use cases
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
   sl.registerLazySingleton(() => LoginUser(sl()));
   sl.registerLazySingleton(() => LogoutUser(sl()));
@@ -61,7 +56,6 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SendPasswordResetEmail(sl()));
   sl.registerLazySingleton(() => UpdateProfile(sl()));
 
-  // Repository
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       remoteDataSource: sl(),
@@ -70,7 +64,6 @@ Future<void> init() async {
     ),
   );
 
-  // Data sources
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(
       firebaseAuth: sl(),
@@ -85,8 +78,7 @@ Future<void> init() async {
     ),
   );
 
-  //! Features - Habits
-  // Cubit
+
   sl.registerFactory(
     () => HabitCubit(
       addHabitUseCase: sl(),
@@ -95,8 +87,6 @@ Future<void> init() async {
     ),
   );
 
-  //! Features - Profile
-  // Cubit
   sl.registerFactory(
     () => ProfileCubit(
       firebaseAuth: sl(),
@@ -106,8 +96,6 @@ Future<void> init() async {
     ),
   );
 
-  //! Features - Goals
-  // Cubit
   sl.registerFactory(
     () => GoalsCubit(
       firebaseAuth: sl(),
@@ -115,11 +103,10 @@ Future<void> init() async {
     ),
   );
 
-  // Use cases
+
   sl.registerLazySingleton(() => AddHabit(sl()));
   sl.registerLazySingleton(() => CompleteHabit(sl()));
 
-  // Repository
   sl.registerLazySingleton<HabitRepository>(
     () => HabitRepositoryImpl(
       remoteDataSource: sl(),
@@ -129,7 +116,6 @@ Future<void> init() async {
     ),
   );
 
-  // Data sources
   sl.registerLazySingleton<HabitRemoteDataSource>(
     () => HabitRemoteDataSourceImpl(
       firestore: sl(),
@@ -142,10 +128,8 @@ Future<void> init() async {
     ),
   );
 
-  //! Core
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
 
-  //! External
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => FirebaseAuth.instance);

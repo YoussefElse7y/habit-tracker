@@ -3,8 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habit_tracker_app/features/authentication/presentation/pages/auth_wrapper.dart';
 import 'package:habit_tracker_app/features/authentication/presentation/cubit/auth_cubit.dart';
-import 'package:habit_tracker_app/features/authentication/presentation/pages/login_page.dart';
-import 'package:habit_tracker_app/features/authentication/presentation/pages/register_page.dart';
 import 'package:habit_tracker_app/features/habits/presentation/cubit/habit_cubit.dart';
 import 'package:habit_tracker_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:habit_tracker_app/features/goals/presentation/cubit/goals_cubit.dart';
@@ -13,7 +11,7 @@ import 'injection_container.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

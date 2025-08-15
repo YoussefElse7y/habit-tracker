@@ -98,7 +98,6 @@ class _ProfilePageState extends State<ProfilePage> {
             if (state is ProfileLoaded) {
               user = state.user;
             } else if (state is ProfileImageUploading) {
-              // Get user from previous state
               final profileCubit = context.read<ProfileCubit>();
               if (profileCubit.state is ProfileLoaded) {
                 user = (profileCubit.state as ProfileLoaded).user;
@@ -117,17 +116,14 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Profile Image Section
                   _buildProfileImageSection(user, state is ProfileImageUploading),
                   
                   const SizedBox(height: 32),
                   
-                  // Profile Info Section
                   _buildProfileInfoSection(user),
                   
                   const SizedBox(height: 32),
                   
-                  // Account Settings Section
                   _buildAccountSettingsSection(user),
                 ],
               ),
@@ -197,7 +193,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             
-            // Upload indicator
             if (isUploading)
               Container(
                 width: 120,
@@ -213,7 +208,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             
-            // Camera button
             Positioned(
               bottom: 0,
               right: 0,
@@ -315,7 +309,6 @@ class _ProfilePageState extends State<ProfilePage> {
           
           const SizedBox(height: 16),
           
-          // Name field
           _buildInfoRow(
             'Name',
             _isEditing,
@@ -329,12 +322,10 @@ class _ProfilePageState extends State<ProfilePage> {
           
           const SizedBox(height: 16),
           
-          // Email field (read-only)
           _buildInfoRow('Email', false, value: user.email),
           
           const SizedBox(height: 16),
           
-          // Member since
           _buildInfoRow(
             'Member since',
             false,
@@ -444,7 +435,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ? Icon(Icons.check_circle, color: Colors.green)
                 : TextButton(
                     onPressed: () {
-                      // Handle email verification
                     },
                     child: const Text('Verify'),
                   ),
@@ -458,7 +448,6 @@ class _ProfilePageState extends State<ProfilePage> {
             subtitle: 'Update your password',
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // Handle password change
             },
           ),
           

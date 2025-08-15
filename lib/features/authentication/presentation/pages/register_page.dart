@@ -1,23 +1,16 @@
 // File: features/authentication/presentation/pages/register_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/validators.dart';
+import '../../../../core/widgets/custom_snackbar.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
+import '../widgets/auth_text_field.dart';
+import '../widgets/social_login_button.dart';
 
-/// RegisterPage provides the user interface for user registration.
-/// 
-/// This page includes:
-/// - Full name, email, password, and confirm password fields
-/// - Comprehensive form validation
-/// - Password strength indicator
-/// - Terms and conditions acceptance
-/// - Google Sign-Up option
-/// - Navigation back to login
-/// - Integration with AuthCubit for state management
-/// 
-/// The page follows the same design patterns as LoginPage and integrates
-/// seamlessly with our Clean Architecture authentication flow.
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -26,35 +19,32 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // Form key for validation
+  // Form and controllers
   final _formKey = GlobalKey<FormState>();
-  
-  // Text editing controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
-  // UI state variables
+  // UI state
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _acceptTerms = false;
+  bool _autoValidate = false;
   
   // Password strength tracking
   double _passwordStrength = 0.0;
   String _passwordStrengthText = '';
-  Color _passwordStrengthColor = Colors.red;
-  
+  Color _passwordStrengthColor = AppColors.error;
+
   @override
   void initState() {
     super.initState();
-    // Listen to password changes for strength indicator
     _passwordController.addListener(_updatePasswordStrength);
   }
 
   @override
   void dispose() {
-    // Clean up controllers
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -65,58 +55,82 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: BlocListener<AuthCubit, AuthState>(
-          // Listen to auth state changes for UI feedback
-          listener: (context, state) {
-            if (state is AuthRegistrationError) {
-              _showErrorDialog(state.message);
-            } else if (state is AuthRegistrationSuccess) {
-              _showSuccessDialog();
-            }
-          },
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: BlocConsumer<AuthCubit, AuthState>(
+          listener: _handleAuthStateChanges,
+          builder: (context, state) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 40),
-                  
-                  // Header Section
                   _buildHeader(),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Registration Form
-                  _buildRegistrationForm(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Alternative Registration Options
-                  _buildAlternativeRegistration(),
-                  
                   const SizedBox(height: 40),
+                  _buildRegistrationForm(),
+                  const SizedBox(height: 24),
+                  _buildSignUpButton(state),
+                  const SizedBox(height: 32),
+                  _buildDivider(),
+                  const SizedBox(height: 24),
+                  _buildSocialLogin(state),
+                  const SizedBox(height: 32),
+                  _buildLoginPrompt(),
+                  const SizedBox(height: 20),
                 ],
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  /// Builds the header section with title and back to login navigation
+  /// Handles authentication state changes for UI feedback
+  void _handleAuthStateChanges(BuildContext context, AuthState state) {
+    if (state is AuthRegistrationError) {
+      CustomSnackBar.showError(
+        context: context,
+        message: state.message,
+      );
+    } else if (state is AuthError) {
+      CustomSnackBar.showError(
+        context: context,
+        message: state.message,
+      );
+    } else if (state is AuthRegistrationSuccess) {
+      CustomSnackBar.showSuccess(
+        context: context,
+        message: state.emailVerificationSent
+            ? 'Account created! Please check your email for verification.'
+            : 'Account created successfully!',
+      );
+    }
+  }
+
+  /// Builds the header section with app branding
   Widget _buildHeader() {
     return Column(
       children: [
-        // App Logo/Icon
+        // App Logo
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.orange,
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primaryDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.track_changes,
@@ -124,316 +138,111 @@ class _RegisterPageState extends State<RegisterPage> {
             color: Colors.white,
           ),
         ),
-        
         const SizedBox(height: 24),
         
-        // Title and Login navigation
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Sign Up',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            
-            // Back to Login Button
-            TextButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(
-                Icons.arrow_back_ios,
-                size: 16,
-                color: Colors.orange,
-              ),
-              label: const Text(
-                'Log In',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.orange,
-                ),
-              ),
-            ),
-          ],
+        // Welcome text
+        Text(
+          'Create Account',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
-        
         const SizedBox(height: 8),
-        
-        // Subtitle
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Create your account to get started',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+        Text(
+          'Sign up to start your habit journey',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
     );
   }
 
-  /// Builds the main registration form
+  /// Builds the registration form
   Widget _buildRegistrationForm() {
     return Form(
       key: _formKey,
+      autovalidateMode: _autoValidate 
+          ? AutovalidateMode.onUserInteraction 
+          : AutovalidateMode.disabled,
       child: Column(
         children: [
           // Full Name Field
-          _buildNameField(),
+          AuthTextField(
+            controller: _nameController,
+            label: 'Full Name',
+            hintText: 'Enter your full name',
+            keyboardType: TextInputType.name,
+            textInputAction: TextInputAction.next,
           
-          const SizedBox(height: 16),
+            prefixIcon: Icons.person_outlined,
+            validator: _validateName,
+          ),
+          
+          const SizedBox(height: 20),
           
           // Email Field
-          _buildEmailField(),
+          AuthTextField(
+            controller: _emailController,
+            label: 'Email',
+            hintText: 'Enter your email address',
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            prefixIcon: Icons.email_outlined,
+            validator: Validators.validateEmail,
+          ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
           // Password Field with Strength Indicator
-          _buildPasswordField(),
+          Column(
+            children: [
+              AuthTextField(
+                controller: _passwordController,
+                label: 'Password',
+                hintText: 'Create a strong password',
+                obscureText: !_isPasswordVisible,
+                textInputAction: TextInputAction.next,
+                prefixIcon: Icons.lock_outlined,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    color: AppColors.textSecondary,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
+                validator: _validatePassword,
+              ),
+              
+              // Password Strength Indicator
+              if (_passwordController.text.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildPasswordStrengthIndicator(),
+              ],
+            ],
+          ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
           // Confirm Password Field
-          _buildConfirmPasswordField(),
-          
-          const SizedBox(height: 16),
-          
-          // Terms and Conditions
-          _buildTermsAcceptance(),
-          
-          const SizedBox(height: 32),
-          
-          // Sign Up Button
-          _buildSignUpButton(),
-        ],
-      ),
-    );
-  }
-
-  /// Builds the full name input field
-  Widget _buildNameField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Full Name',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        TextFormField(
-          controller: _nameController,
-          textInputAction: TextInputAction.next,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            hintText: 'Enter your full name',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.orange, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-          validator: _validateName,
-        ),
-      ],
-    );
-  }
-
-  /// Builds the email input field
-  Widget _buildEmailField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Email',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        TextFormField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            hintText: 'Enter your email address',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.orange, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-          validator: _validateEmail,
-        ),
-      ],
-    );
-  }
-
-  /// Builds the password field with strength indicator
-  Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Password',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        TextFormField(
-          controller: _passwordController,
-          obscureText: !_isPasswordVisible,
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            hintText: 'Create a strong password',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.orange, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                color: Colors.grey[400],
-              ),
-              onPressed: () {
-                setState(() {
-                  _isPasswordVisible = !_isPasswordVisible;
-                });
-              },
-            ),
-          ),
-          validator: _validatePassword,
-        ),
-        
-        // Password Strength Indicator
-        if (_passwordController.text.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          _buildPasswordStrengthIndicator(),
-        ],
-      ],
-    );
-  }
-
-  /// Builds the confirm password field
-  Widget _buildConfirmPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Confirm Password',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        TextFormField(
-          controller: _confirmPasswordController,
-          obscureText: !_isConfirmPasswordVisible,
-          textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => _handleSignUp(),
-          decoration: InputDecoration(
+          AuthTextField(
+            controller: _confirmPasswordController,
+            label: 'Confirm Password',
             hintText: 'Confirm your password',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.orange, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+            obscureText: !_isConfirmPasswordVisible,
+            textInputAction: TextInputAction.done,
+            prefixIcon: Icons.lock_outlined,
             suffixIcon: IconButton(
               icon: Icon(
                 _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                color: Colors.grey[400],
+                color: AppColors.textSecondary,
               ),
               onPressed: () {
                 setState(() {
@@ -441,10 +250,16 @@ class _RegisterPageState extends State<RegisterPage> {
                 });
               },
             ),
+            validator: _validateConfirmPassword,
+            onFieldSubmitted: (_) => _handleSignUp(),
           ),
-          validator: _validateConfirmPassword,
-        ),
-      ],
+          
+          const SizedBox(height: 20),
+          
+          // Terms and Conditions
+          _buildTermsAcceptance(),
+        ],
+      ),
     );
   }
 
@@ -458,9 +273,10 @@ class _RegisterPageState extends State<RegisterPage> {
             Expanded(
               child: LinearProgressIndicator(
                 value: _passwordStrength,
-                backgroundColor: Colors.grey[300],
+                backgroundColor: AppColors.borderLight,
                 valueColor: AlwaysStoppedAnimation<Color>(_passwordStrengthColor),
                 minHeight: 4,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(width: 12),
@@ -474,12 +290,12 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           'Password must contain: 8+ characters, uppercase, lowercase, number',
           style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey[600],
+            fontSize: 12,
+            color: AppColors.textTertiary,
           ),
         ),
       ],
@@ -488,42 +304,50 @@ class _RegisterPageState extends State<RegisterPage> {
 
   /// Builds terms and conditions acceptance
   Widget _buildTermsAcceptance() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Checkbox(
-          value: _acceptTerms,
-          onChanged: (value) {
-            setState(() {
-              _acceptTerms = value ?? false;
-            });
-          },
-          activeColor: Colors.orange,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _acceptTerms = !_acceptTerms;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(top: 12),
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _acceptTerms = !_acceptTerms;
+        });
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: Checkbox(
+                value: _acceptTerms,
+                onChanged: (value) {
+                  setState(() {
+                    _acceptTerms = value ?? false;
+                  });
+                },
+                activeColor: AppColors.primary,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
               child: RichText(
                 text: TextSpan(
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Colors.black54,
+                    color: AppColors.textSecondary,
                   ),
                   children: [
                     const TextSpan(text: 'I agree to the '),
                     TextSpan(
                       text: 'Terms of Service',
-                      style: const TextStyle(
-                        color: Colors.orange,
+                      style: TextStyle(
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w500,
                         decoration: TextDecoration.underline,
                       ),
@@ -531,8 +355,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     const TextSpan(text: ' and '),
                     TextSpan(
                       text: 'Privacy Policy',
-                      style: const TextStyle(
-                        color: Colors.orange,
+                      style: TextStyle(
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w500,
                         decoration: TextDecoration.underline,
                       ),
@@ -541,157 +365,136 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   /// Builds the sign up button with loading state
-  Widget _buildSignUpButton() {
-    return BlocBuilder<AuthCubit, AuthState>(
-      builder: (context, state) {
-        final isLoading = state is AuthRegisterLoading;
-        
-        return SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: isLoading || !_acceptTerms ? null : _handleSignUp,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              disabledBackgroundColor: Colors.orange.withOpacity(0.6),
-            ),
-            child: isLoading
-                ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        'Creating Account...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  )
-                : const Text(
-                    'Create Account',
+  Widget _buildSignUpButton(AuthState state) {
+    final isLoading = state is AuthRegisterLoading;
+    final isDisabled = isLoading || !_acceptTerms;
+    
+    return SizedBox(
+      height: 56,
+      child: ElevatedButton(
+        onPressed: isDisabled ? null : _handleSignUp,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+          elevation: 2,
+          shadowColor: AppColors.primary.withOpacity(0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: isLoading
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Creating Account...',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-          ),
-        );
-      },
+                ],
+              )
+            : Text(
+                'Create Account',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
     );
   }
 
-  /// Builds alternative registration options (Google Sign-Up)
-  Widget _buildAlternativeRegistration() {
-    return Column(
+  /// Builds the divider with "or" text
+  Widget _buildDivider() {
+    return Row(
       children: [
-        // Divider with "Or sign up with"
-        Row(
-          children: [
-            Expanded(
-              child: Divider(
-                color: Colors.grey[300],
-                thickness: 1,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Or sign up with:',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ),
-            Expanded(
-              child: Divider(
-                color: Colors.grey[300],
-                thickness: 1,
-              ),
-            ),
-          ],
+        Expanded(
+          child: Divider(
+            color: AppColors.divider,
+            thickness: 1,
+          ),
         ),
-        
-        const SizedBox(height: 24),
-        
-        // Google Sign-Up Button
-        _buildGoogleSignUpButton(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'or',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            color: AppColors.divider,
+            thickness: 1,
+          ),
+        ),
       ],
     );
   }
 
-  /// Builds the Google Sign-Up button
-  Widget _buildGoogleSignUpButton() {
-    return BlocBuilder<AuthCubit, AuthState>(
-      builder: (context, state) {
-        final isLoading = state is AuthGoogleLoading;
-        
-        return SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: OutlinedButton.icon(
-            onPressed: isLoading ? null : _handleGoogleSignUp,
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
-              side: BorderSide(color: Colors.grey[300]!),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                    ),
-                  )
-                : Image.asset(
-                    'assets/images/google_logo.png',
-                    width: 24,
-                    height: 24,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.account_circle,
-                        size: 24,
-                        color: Colors.blue,
-                      );
-                    },
-                  ),
-            label: Text(
-              isLoading ? 'Signing up...' : 'Continue with Google',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
-              ),
+  /// Builds social login options
+  Widget _buildSocialLogin(AuthState state) {
+    return SocialLoginButton(
+      onPressed: state is AuthGoogleLoading ? null : _handleGoogleSignUp,
+      isLoading: state is AuthGoogleLoading,
+      provider: 'Google',
+      icon: 'assets/images/google_logo.png',
+      fallbackIcon: Icons.account_circle,
+    );
+  }
+
+  /// Builds login prompt
+  Widget _buildLoginPrompt() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Already have an account? ',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            'Sign In',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -711,24 +514,10 @@ class _RegisterPageState extends State<RegisterPage> {
       return 'Name cannot exceed 50 characters';
     }
     
-    // Check if name contains only letters and spaces
-    final nameRegex = RegExp(r'^[a-zA-Z\s]+$');
+    // Check if name contains only letters, spaces, and common characters
+    final nameRegex = RegExp(r"^[a-zA-Z\s\-'\.]+$");
     if (!nameRegex.hasMatch(value.trim())) {
-      return 'Name can only contain letters and spaces';
-    }
-    
-    return null;
-  }
-
-  /// Validates email input
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email is required';
-    }
-    
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Please enter a valid email address';
+      return 'Name contains invalid characters';
     }
     
     return null;
@@ -795,7 +584,7 @@ class _RegisterPageState extends State<RegisterPage> {
     // Uppercase check (0.25)
     if (password.contains(RegExp(r'[A-Z]'))) strength += 0.25;
     
-    // Lowercase check (0.25)
+    // Lowercase check (0.25)  
     if (password.contains(RegExp(r'[a-z]'))) strength += 0.25;
     
     // Number check (0.25)
@@ -808,19 +597,19 @@ class _RegisterPageState extends State<RegisterPage> {
   void _updatePasswordStrengthText(double strength) {
     if (strength == 0.0) {
       _passwordStrengthText = '';
-      _passwordStrengthColor = Colors.red;
+      _passwordStrengthColor = AppColors.error;
     } else if (strength <= 0.25) {
       _passwordStrengthText = 'Weak';
-      _passwordStrengthColor = Colors.red;
+      _passwordStrengthColor = AppColors.error;
     } else if (strength <= 0.5) {
       _passwordStrengthText = 'Fair';
-      _passwordStrengthColor = Colors.orange;
+      _passwordStrengthColor = AppColors.warning;
     } else if (strength <= 0.75) {
       _passwordStrengthText = 'Good';
-      _passwordStrengthColor = Colors.blue;
+      _passwordStrengthColor = AppColors.info;
     } else {
       _passwordStrengthText = 'Strong';
-      _passwordStrengthColor = Colors.green;
+      _passwordStrengthColor = AppColors.success;
     }
   }
 
@@ -828,26 +617,40 @@ class _RegisterPageState extends State<RegisterPage> {
 
   /// Handles sign up form submission
   void _handleSignUp() {
+    // Provide haptic feedback
+    HapticFeedback.lightImpact();
+    
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
-    
-    // Validate terms acceptance
+
+    // Check terms acceptance first
     if (!_acceptTerms) {
-      _showTermsError();
+      CustomSnackBar.showError(
+        context: context,
+        message: 'Please accept the Terms of Service and Privacy Policy',
+      );
       return;
     }
-    
+
+    // Enable auto validation for better UX
+    if (!_autoValidate) {
+      setState(() {
+        _autoValidate = true;
+      });
+    }
+
     // Validate form
     if (!_formKey.currentState!.validate()) {
+      HapticFeedback.selectionClick();
       return;
     }
-    
-    // Get form data
+
+    // Extract form data
     final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
-    
+
     // Trigger registration through AuthCubit
     context.read<AuthCubit>().registerWithEmail(
       name: name,
@@ -859,118 +662,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   /// Handles Google Sign-Up
   void _handleGoogleSignUp() {
+    HapticFeedback.lightImpact();
     context.read<AuthCubit>().loginWithGoogle();
-  }
-
-  /// Shows terms acceptance error
-  void _showTermsError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Please accept the Terms of Service and Privacy Policy'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
-
-  /// Shows error dialog
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: Colors.red,
-                size: 28,
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Registration Failed',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: const TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'OK',
-                style: TextStyle(
-                  color: Colors.orange,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Shows success dialog
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 28,
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Welcome!',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Your account has been created successfully! Please check your email for verification.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Go back to login
-              },
-              child: const Text(
-                'Continue',
-                style: TextStyle(
-                  color: Colors.orange,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 }

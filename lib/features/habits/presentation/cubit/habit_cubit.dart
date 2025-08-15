@@ -2,13 +2,14 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/widgets/base_cubit.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/repositories/habit_repository.dart';
 import '../../domain/usecases/add_habit.dart';
 import '../../domain/usecases/complete_habit.dart';
 import 'habit_state.dart';
 
-class HabitCubit extends Cubit<HabitState> {
+class HabitCubit extends BaseCubit<HabitState> {
   // Inject use cases - these handle business logic
   final AddHabit addHabitUseCase;
   final CompleteHabit completeHabitUseCase;
@@ -162,17 +163,13 @@ class HabitCubit extends Cubit<HabitState> {
 
         emit(HabitAddSuccess(habit));
         
-        // Auto-refresh the habit list after a short delay
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (!isClosed) {
-            emit(HabitLoaded(_currentHabits));
-          }
-        });
+        // Immediately update the UI with new data
+        emit(HabitLoaded(_currentHabits));
       },
     );
   }
 
-  /// Mark a habit as completed for today
+  /// Mark a habit as completed for today - OPTIMIZED VERSION
   Future<void> completeHabit(String habitId) async {
     // Find the habit in our cache
     final habitIndex = _currentHabits.indexWhere((h) => h.id == habitId);
@@ -194,6 +191,7 @@ class HabitCubit extends Cubit<HabitState> {
       return;
     }
 
+    // Show loading state immediately
     emit(HabitCompletingLoading(habitId));
 
     final params = CompleteHabitParams(habitId: habitId);
@@ -202,7 +200,7 @@ class HabitCubit extends Cubit<HabitState> {
     result.fold(
       (failure) => emit(HabitCompleteError(habitId, failure.message)),
       (updatedHabit) {
-        // Update local caches
+        // Update local caches immediately
         _currentHabits[habitIndex] = updatedHabit;
         
         final todayIndex = _todaysHabits.indexWhere((h) => h.id == habitId);
@@ -217,17 +215,13 @@ class HabitCubit extends Cubit<HabitState> {
 
         emit(HabitCompleteSuccess(updatedHabit, message: streakMessage));
         
-        // Auto-refresh after showing success
-        Future.delayed(const Duration(milliseconds: 2000), () {
-          if (!isClosed) {
-            emit(HabitTodayLoaded(_todaysHabits));
-          }
-        });
+        // Immediately update the UI with new data - no delays
+        emit(HabitTodayLoaded(_todaysHabits));
       },
     );
   }
 
-  /// Undo habit completion for today
+  /// Undo habit completion for today - OPTIMIZED VERSION
   Future<void> uncompleteHabit(String habitId) async {
     final habitIndex = _currentHabits.indexWhere((h) => h.id == habitId);
     if (habitIndex == -1) {
@@ -249,7 +243,7 @@ class HabitCubit extends Cubit<HabitState> {
     result.fold(
       (failure) => emit(HabitCompleteError(habitId, failure.message)),
       (updatedHabit) {
-        // Update local caches
+        // Update local caches immediately
         _currentHabits[habitIndex] = updatedHabit;
         
         final todayIndex = _todaysHabits.indexWhere((h) => h.id == habitId);
@@ -259,17 +253,13 @@ class HabitCubit extends Cubit<HabitState> {
 
         emit(HabitUncompleteSuccess(updatedHabit));
         
-        // Auto-refresh
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (!isClosed) {
-            emit(HabitTodayLoaded(_todaysHabits));
-          }
-        });
+        // Immediately update the UI - no delays
+        emit(HabitTodayLoaded(_todaysHabits));
       },
     );
   }
 
-  /// Update an existing habit
+  /// Update an existing habit - OPTIMIZED VERSION
   Future<void> updateHabit(Habit updatedHabit) async {
     final habitIndex = _currentHabits.indexWhere((h) => h.id == updatedHabit.id);
     if (habitIndex == -1) {
@@ -284,7 +274,7 @@ class HabitCubit extends Cubit<HabitState> {
     result.fold(
       (failure) => emit(HabitUpdateError(updatedHabit.id, failure.message)),
       (habit) {
-        // Update local caches
+        // Update local caches immediately
         _currentHabits[habitIndex] = habit;
         
         final todayIndex = _todaysHabits.indexWhere((h) => h.id == habit.id);
@@ -300,17 +290,13 @@ class HabitCubit extends Cubit<HabitState> {
 
         emit(HabitUpdateSuccess(habit));
         
-        // Auto-refresh
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (!isClosed) {
-            emit(HabitLoaded(_currentHabits));
-          }
-        });
+        // Immediately update the UI - no delays
+        emit(HabitLoaded(_currentHabits));
       },
     );
   }
 
-  /// Delete a habit permanently
+  /// Delete a habit permanently - OPTIMIZED VERSION
   Future<void> deleteHabit(String habitId) async {
     final habitIndex = _currentHabits.indexWhere((h) => h.id == habitId);
     if (habitIndex == -1) {
@@ -325,27 +311,23 @@ class HabitCubit extends Cubit<HabitState> {
     result.fold(
       (failure) => emit(HabitDeleteError(habitId, failure.message)),
       (_) {
-        // Remove from local caches
+        // Remove from local caches immediately
         _currentHabits.removeAt(habitIndex);
         _todaysHabits.removeWhere((h) => h.id == habitId);
 
         emit(HabitDeleteSuccess(habitId));
         
-        // Auto-refresh
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (!isClosed) {
-            if (_currentHabits.isEmpty) {
-              emit(const HabitEmpty());
-            } else {
-              emit(HabitLoaded(_currentHabits));
-            }
-          }
-        });
+        // Immediately update the UI - no delays
+        if (_currentHabits.isEmpty) {
+          emit(const HabitEmpty());
+        } else {
+          emit(HabitLoaded(_currentHabits));
+        }
       },
     );
   }
 
-  /// Toggle habit active/inactive status
+  /// Toggle habit active/inactive status - OPTIMIZED VERSION
   Future<void> toggleHabitActive(String habitId) async {
     final habitIndex = _currentHabits.indexWhere((h) => h.id == habitId);
     if (habitIndex == -1) {
@@ -359,7 +341,7 @@ class HabitCubit extends Cubit<HabitState> {
     result.fold(
       (failure) => emit(HabitUpdateError(habitId, failure.message)),
       (updatedHabit) {
-        // Update local caches
+        // Update local caches immediately
         _currentHabits[habitIndex] = updatedHabit;
         
         // Handle today's habits list
@@ -377,12 +359,8 @@ class HabitCubit extends Cubit<HabitState> {
         final message = updatedHabit.isActive ? 'Habit activated' : 'Habit paused';
         emit(HabitToggleActiveSuccess(updatedHabit, message: message));
         
-        // Auto-refresh
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (!isClosed) {
-            emit(HabitLoaded(_currentHabits));
-          }
-        });
+        // Immediately update the UI - no delays
+        emit(HabitLoaded(_currentHabits));
       },
     );
   }

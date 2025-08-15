@@ -48,7 +48,6 @@ class _HomePageState extends State<HomePage>
         context.read<GoalsCubit>().loadGoals(),
       ]);
     } catch (e) {
-      debugPrint('Error loading initial data: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -65,7 +64,7 @@ class _HomePageState extends State<HomePage>
       await context.read<HabitCubit>().refreshAllData();
       await context.read<GoalsCubit>().loadGoals();
     } catch (e) {
-      debugPrint('Error refreshing data: $e');
+      // Error is handled by the cubit states
     }
   }
 

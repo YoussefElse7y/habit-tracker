@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habit_tracker_app/features/habits/presentation/pages/achievements_page.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/habit.dart';
 import '../cubit/habit_cubit.dart';
@@ -206,31 +207,56 @@ class _AppBarSection extends StatelessWidget {
     return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
 }
-
-// Extracted Profile Button
+// Extracted Profile and Achievements Buttons
 class _ProfileButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          shape: BoxShape.circle,
+    return Row(
+      children: [
+        // Achievements Button
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AchievementsPage()),
+          ),
+          child: Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.emoji_events,
+              color: AppColors.secondary,
+              size: 24,
+            ),
+          ),
         ),
-        child: Icon(
-          Icons.person,
-          color: AppColors.primary,
-          size: 24,
+        // Profile Button
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const ProfilePage()),
+          ),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.person,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
+
 
 // Extracted Progress Card with fixed calculation
 class _ProgressCard extends StatelessWidget {

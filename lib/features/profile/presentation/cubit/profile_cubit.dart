@@ -141,6 +141,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
     } catch (e) {
       emit(ProfileError(message: 'Failed to upload image: $e'));
+      print('Failed to upload image: $e');
     }
   }
 

@@ -1,4 +1,3 @@
-// File: features/habits/presentation/pages/habit_details_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,8 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/habit.dart';
 import '../cubit/habit_cubit.dart';
 import '../cubit/habit_state.dart';
-import '../widgets/habit_progress_chart.dart';
-import '../widgets/streak_indicator.dart';
+
 import 'add_habit_page.dart';
 
 class HabitDetailsPage extends StatefulWidget {
@@ -21,7 +19,6 @@ class HabitDetailsPage extends StatefulWidget {
 
 class _HabitDetailsPageState extends State<HabitDetailsPage> {
   late Habit currentHabit;
-  bool _isLoading = false;
 
   @override
   void initState() {

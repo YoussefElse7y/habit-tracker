@@ -1,7 +1,10 @@
 // File: core/utils/cubit_utils.dart
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+/// Import for the Failure class from dartz
+import 'package:dartz/dartz.dart';
+import '../error/failures.dart';
+import 'dart:async';
 /// Utility class for common cubit operations
 /// This helps eliminate duplicate code patterns across different cubits
 class CubitUtils {
@@ -111,24 +114,22 @@ class CubitUtils {
     });
   }
 
-  /// Throttle function to limit state emissions
-  static bool _throttleMap = <Cubit, DateTime>{};
-  static bool throttle<T>(
-    Cubit<T> cubit,
-    Duration duration,
-  ) {
-    final now = DateTime.now();
-    final lastEmit = _throttleMap[cubit];
-    
-    if (lastEmit == null || now.difference(lastEmit) >= duration) {
-      _throttleMap[cubit] = now;
-      return true;
-    }
-    return false;
+/// Throttle function to limit state emissions
+static final Map<Cubit, DateTime> _throttleMap = {};
+
+static bool throttle<T>(
+  Cubit<T> cubit,
+  Duration duration,
+) {
+  final now = DateTime.now();
+  final lastEmit = _throttleMap[cubit];
+
+  if (lastEmit == null || now.difference(lastEmit) >= duration) {
+    _throttleMap[cubit] = now;
+    return true;
   }
+  return false;
 }
 
-/// Import for the Failure class from dartz
-import 'package:dartz/dartz.dart';
-import '../error/failures.dart';
-import 'dart:async';
+}
+

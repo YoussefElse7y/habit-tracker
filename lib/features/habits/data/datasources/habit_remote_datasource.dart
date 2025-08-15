@@ -403,7 +403,6 @@ class HabitRemoteDataSourceImpl implements HabitRemoteDataSource {
                 .map((doc) => HabitModel.fromFirestore(doc.data()))
                 .toList();
             
-            // Update cache with real-time data
             _updateCache('all_$userId', habits);
             
             return habits;
@@ -426,12 +425,10 @@ class HabitRemoteDataSourceImpl implements HabitRemoteDataSource {
                 .map((doc) => HabitModel.fromFirestore(doc.data()))
                 .toList();
             
-            // Filter for today's habits
             final todaysHabits = allHabits
                 .where((habit) => _shouldShowHabitToday(habit))
                 .toList();
             
-            // Update cache with real-time data
             _updateCache('today_$userId', todaysHabits);
             
             return todaysHabits;
@@ -441,7 +438,6 @@ class HabitRemoteDataSourceImpl implements HabitRemoteDataSource {
     }
   }
 
-  // Helper method to get day name from weekday number
   String _getDayName(int weekday) {
     const days = [
       'monday', 'tuesday', 'wednesday', 'thursday',
@@ -450,7 +446,6 @@ class HabitRemoteDataSourceImpl implements HabitRemoteDataSource {
     return days[weekday - 1];
   }
 
-  // Method to clear all caches (useful for logout or data refresh)
   void clearAllCaches() {
     _clearCache();
   }

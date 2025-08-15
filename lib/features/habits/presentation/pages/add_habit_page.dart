@@ -1,8 +1,6 @@
-// File: features/habits/presentation/pages/add_habit_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:habit_tracker_app/features/habits/data/models/habit_model.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/habit.dart';
 import '../cubit/habit_cubit.dart';
@@ -30,7 +28,6 @@ class _AddHabitPageState extends State<AddHabitPage> {
   int _targetCount = 1;
   bool _isLoading = false;
 
-  // Days of the week for selection
   final List<String> _weekDays = [
     'monday',
     'tuesday',

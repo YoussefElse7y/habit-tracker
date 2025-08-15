@@ -49,4 +49,6 @@ class AppConstants {
   static const String habitAddedMessage = 'Habit added successfully!';
   static const String habitCompletedMessage = 'Great job! Keep the streak going!';
   static const String profileUpdatedMessage = 'Profile updated successfully!';
+
+  static int pointsPerLevel;
 }

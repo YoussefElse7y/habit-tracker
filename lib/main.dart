@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habit_tracker_app/features/authentication/presentation/pages/auth_wrapper.dart';
 import 'package:habit_tracker_app/features/authentication/presentation/cubit/auth_cubit.dart';
 import 'package:habit_tracker_app/features/habits/presentation/cubit/habit_cubit.dart';
+import 'package:habit_tracker_app/features/habits/presentation/cubit/achievement_cubit.dart';
 import 'package:habit_tracker_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:habit_tracker_app/features/goals/presentation/cubit/goals_cubit.dart';
 import 'firebase_options.dart';
@@ -33,6 +34,9 @@ class MainApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => di.sl<HabitCubit>(),
+        ),
+        BlocProvider(
+          create: (_) => di.sl<AchievementCubit>(),
         ),
         BlocProvider(
           create: (_) => di.sl<ProfileCubit>(),

@@ -32,6 +32,21 @@ import 'features/habits/domain/usecases/add_habit.dart';
 import 'features/habits/domain/usecases/complete_habit.dart';
 import 'features/habits/presentation/cubit/habit_cubit.dart';
 
+// Achievement Feature
+import 'features/habits/data/datasources/achievement_local_datasource.dart';
+import 'features/habits/data/datasources/achievement_remote_datasource.dart';
+import 'features/habits/data/repositories/achievement_repository_impl.dart';
+import 'features/habits/domain/repositories/achievement_repository.dart';
+import 'features/habits/domain/usecases/check_achievements.dart';
+import 'features/habits/domain/usecases/get_user_stats.dart';
+import 'features/habits/domain/usecases/award_points.dart';
+import 'features/habits/domain/usecases/get_all_achievements.dart';
+import 'features/habits/domain/usecases/get_achievement_progress.dart';
+import 'features/habits/domain/usecases/get_challenges.dart';
+import 'features/habits/domain/usecases/get_leaderboard.dart';
+import 'features/habits/domain/usecases/recover_streak.dart';
+import 'features/habits/presentation/cubit/achievement_cubit.dart';
+
 // Profile Feature
 import 'features/profile/presentation/cubit/profile_cubit.dart';
 
@@ -41,6 +56,7 @@ import 'features/goals/presentation/cubit/goals_cubit.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
+  // Auth
   sl.registerFactory(
     () => AuthCubit(
       loginUser: sl(),
@@ -78,7 +94,7 @@ Future<void> init() async {
     ),
   );
 
-
+  // Habits
   sl.registerFactory(
     () => HabitCubit(
       addHabitUseCase: sl(),
@@ -86,23 +102,6 @@ Future<void> init() async {
       habitRepository: sl(),
     ),
   );
-
-  sl.registerFactory(
-    () => ProfileCubit(
-      firebaseAuth: sl(),
-      firestore: sl(),
-      storage: sl(),
-      imagePicker: sl(),
-    ),
-  );
-
-  sl.registerFactory(
-    () => GoalsCubit(
-      firebaseAuth: sl(),
-      firestore: sl(),
-    ),
-  );
-
 
   sl.registerLazySingleton(() => AddHabit(sl()));
   sl.registerLazySingleton(() => CompleteHabit(sl()));
@@ -128,8 +127,71 @@ Future<void> init() async {
     ),
   );
 
+  // Achievement
+  sl.registerFactory(
+    () => AchievementCubit(
+      awardPoints: AwardPoints(sl()),
+      getAchievementProgress: GetAchievementProgress(sl()),
+      getAllAchievements: GetAllAchievements(sl()),
+      checkAchievements: CheckAchievements(sl()),
+      getUserStats: GetUserStats(sl()),
+      getChallenges: GetChallenges(sl()),
+      getLeaderboard: GetLeaderboard(sl()),
+      recoverStreak: RecoverStreak(sl()),
+    ),
+  );
+
+  sl.registerLazySingleton(() => CheckAchievements(sl()));
+  sl.registerLazySingleton(() => GetUserStats(sl()));
+  sl.registerLazySingleton(() => AwardPoints(sl()));
+  sl.registerLazySingleton(() => GetAllAchievements(sl()));
+  sl.registerLazySingleton(() => GetAchievementProgress(sl()));
+  sl.registerLazySingleton(() => GetChallenges(sl()));
+  sl.registerLazySingleton(() => GetLeaderboard(sl()));
+  sl.registerLazySingleton(() => RecoverStreak(sl()));
+
+  sl.registerLazySingleton<AchievementRepository>(
+    () => AchievementRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<AchievementRemoteDataSource>(
+    () => AchievementRemoteDataSourceImpl(
+      firestore: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<AchievementLocalDataSource>(
+    () => AchievementLocalDataSourceImpl(
+      sharedPreferences: sl(),
+    ),
+  );
+
+  // Profile
+  sl.registerFactory(
+    () => ProfileCubit(
+      firebaseAuth: sl(),
+      firestore: sl(),
+      storage: sl(),
+      imagePicker: sl(),
+    ),
+  );
+
+  // Goals
+  sl.registerFactory(
+    () => GoalsCubit(
+      firebaseAuth: sl(),
+      firestore: sl(),
+    ),
+  );
+
+  // Core
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
 
+  // External
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => FirebaseAuth.instance);

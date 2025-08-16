@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habit_tracker_app/features/authentication/presentation/cubit/auth_cubit.dart';
 import 'package:habit_tracker_app/features/habits/presentation/pages/achievements_page.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/entities/habit.dart';
@@ -119,7 +120,6 @@ class _HomePageState extends State<HomePage>
                 AppColors.habitCompleted,
                 AppColors.secondaryLight,
               ],
-              
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -169,8 +169,8 @@ class _AppBarSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Hello, Susy!',
+                Text(
+                  'Hello, ${context.read<AuthCubit>().currentUser!.name.split(' ')[0]}!',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -207,6 +207,7 @@ class _AppBarSection extends StatelessWidget {
     return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
 }
+
 // Extracted Profile and Achievements Buttons
 class _ProfileButton extends StatelessWidget {
   @override
@@ -256,7 +257,6 @@ class _ProfileButton extends StatelessWidget {
     );
   }
 }
-
 
 // Extracted Progress Card with fixed calculation
 class _ProgressCard extends StatelessWidget {

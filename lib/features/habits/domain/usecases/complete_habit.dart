@@ -1,4 +1,3 @@
-
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecases/usecase.dart';
@@ -24,7 +23,7 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
 
     // Get the current habit to check its state
     final habitResult = await habitRepository.getHabitById(params.habitId);
-    
+
     return await habitResult.fold(
       (failure) async => Left(failure), // Habit not found or other error
       (habit) async {
@@ -37,8 +36,7 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
         // Check if already completed today
         if (habit.isCompletedToday()) {
           return const Left(ValidationFailure(
-            'This habit has already been completed today!'
-          ));
+              'This habit has already been completed today!'));
         }
 
         // Calculate updated habit with new completion
@@ -46,17 +44,19 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
 
         // Save the updated habit
         final saveResult = await habitRepository.updateHabit(updatedHabit);
-        
+
         return await saveResult.fold(
           (failure) async => Left(failure),
           (savedHabit) async {
             // Update user stats after completing habit
-            await _updateUserStatsAfterHabitCompletion(habit.userId, savedHabit);
-            
+            await _updateUserStatsAfterHabitCompletion(
+                habit.userId, savedHabit);
+
             // Check for achievements (like streak and completion achievements)
-            await _checkAchievementsAfterHabitCompletion(habit.userId, savedHabit);
-            
-            return savedHabit;
+            await _checkAchievementsAfterHabitCompletion(
+                habit.userId, savedHabit);
+
+            return Right(savedHabit);
           },
         );
       },
@@ -64,7 +64,8 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
   }
 
   /// Update user stats after completing a habit
-  Future<void> _updateUserStatsAfterHabitCompletion(String userId, Habit completedHabit) async {
+  Future<void> _updateUserStatsAfterHabitCompletion(
+      String userId, Habit completedHabit) async {
     try {
       await achievementRepository.updateUserStats(userId, {
         'totalCompletions': completedHabit.totalCompletions,
@@ -79,44 +80,53 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
   }
 
   /// Check for achievements after completing a habit
-  Future<void> _checkAchievementsAfterHabitCompletion(String userId, Habit completedHabit) async {
+  Future<void> _checkAchievementsAfterHabitCompletion(
+      String userId, Habit completedHabit) async {
     try {
       print('Checking achievements after habit completion for user $userId');
-      
+
       // Get current user stats to calculate proper progress
       final userStatsResult = await achievementRepository.getUserStats(userId);
-      
+
       return await userStatsResult.fold(
         (failure) async {
           print('Failed to get user stats: $failure');
           return;
         },
         (userStats) async {
-          print('Current user stats: totalHabits=${userStats.totalHabits}, totalCompletions=${userStats.totalCompletions}');
-          
+          print(
+              'Current user stats: totalHabits=${userStats.totalHabits}, totalCompletions=${userStats.totalCompletions}');
+
           // Calculate total completions across all habits
-          final totalCompletions = userStats.totalCompletions + 1; // Add current completion
+          final totalCompletions =
+              userStats.totalCompletions + 1; // Add current completion
           print('Total completions after this completion: $totalCompletions');
-          
+
           // Check for streak and completion achievements
-          final newAchievementsResult = await achievementRepository.checkAndUnlockAchievements(userId, {
+          final newAchievementsResult =
+              await achievementRepository.checkAndUnlockAchievements(userId, {
             'totalCompletions': totalCompletions,
             'currentStreak': completedHabit.currentStreak,
             'longestStreak': completedHabit.longestStreak,
             'totalHabits': userStats.totalHabits,
-            'weeklyCompletions': totalCompletions, // For perfect week achievement
-            'weeklyTotal': userStats.totalHabits, // For perfect week achievement
-            'completionHour': DateTime.now().hour, // For early bird/night owl achievements
+            'weeklyCompletions':
+                totalCompletions, // For perfect week achievement
+            'weeklyTotal':
+                userStats.totalHabits, // For perfect week achievement
+            'completionHour':
+                DateTime.now().hour, // For early bird/night owl achievements
           });
-          
+
           newAchievementsResult.fold(
             (failure) {
               print('Failed to check achievements: $failure');
             },
             (newAchievements) {
-              print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
+              print(
+                  'Achievement check completed. New achievements unlocked: ${newAchievements.length}');
               if (newAchievements.isNotEmpty) {
-                print('New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
+                print(
+                    'New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
               }
             },
           );
@@ -144,13 +154,13 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
 
   Habit _calculateCompletionUpdate(Habit habit) {
     final now = DateTime.now();
-    
+
     // Calculate new streak
     final newCurrentStreak = _calculateNewStreak(habit, now);
-    
+
     // Update longest streak if current streak is higher
-    final newLongestStreak = newCurrentStreak > habit.longestStreak 
-        ? newCurrentStreak 
+    final newLongestStreak = newCurrentStreak > habit.longestStreak
+        ? newCurrentStreak
         : habit.longestStreak;
 
     // Create updated habit with new completion data
@@ -206,7 +216,8 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
       case HabitFrequency.monthly:
         // For monthly habits, check if it's within the same month or next month
         if (completionDate.month == lastCompleted.month + 1 ||
-            (completionDate.month == lastCompleted.month && completionDate.year == lastCompleted.year)) {
+            (completionDate.month == lastCompleted.month &&
+                completionDate.year == lastCompleted.year)) {
           return habit.currentStreak + 1;
         } else {
           return 1;

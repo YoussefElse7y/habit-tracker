@@ -61,7 +61,7 @@ class AddHabit implements UseCase<Habit, AddHabitParams> {
             // Check for achievements (like "First Step")
             await _checkAchievementsAfterHabitCreation(params.userId, habits.length + 1);
             
-            return createdHabit;
+            return Right(createdHabit);
           },
         );
       },

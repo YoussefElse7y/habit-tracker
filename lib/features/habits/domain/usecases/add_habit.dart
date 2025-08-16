@@ -55,11 +55,20 @@ class AddHabit implements UseCase<Habit, AddHabitParams> {
         return await habitResult.fold(
           (failure) async => Left(failure),
           (createdHabit) async {
+            // Calculate the new total habits count (including the one we just created)
+            final newTotalHabits = habits.length + 1;
+            
             // Update user stats after creating habit
-            await _updateUserStatsAfterHabitCreation(params.userId, habits.length + 1);
+            final statsResult = await _updateUserStatsAfterHabitCreation(params.userId, newTotalHabits);
+            if (statsResult.isLeft()) {
+              print('Warning: Failed to update user stats: ${statsResult.fold((f) => f.message, (_) => '')}');
+            }
             
             // Check for achievements (like "First Step")
-            await _checkAchievementsAfterHabitCreation(params.userId, habits.length + 1);
+            final achievementResult = await _checkAchievementsAfterHabitCreation(params.userId, newTotalHabits);
+            if (achievementResult.isLeft()) {
+              print('Warning: Failed to check achievements: ${achievementResult.fold((f) => f.message, (_) => '')}');
+            }
             
             return createdHabit;
           },
@@ -69,32 +78,34 @@ class AddHabit implements UseCase<Habit, AddHabitParams> {
   }
 
   /// Update user stats after creating a new habit
-  Future<void> _updateUserStatsAfterHabitCreation(String userId, int newTotalHabits) async {
+  Future<Either<Failure, UserStats>> _updateUserStatsAfterHabitCreation(String userId, int newTotalHabits) async {
     try {
-      await achievementRepository.updateUserStats(userId, {
+      final result = await achievementRepository.updateUserStats(userId, {
         'totalHabits': newTotalHabits,
         'activeHabits': newTotalHabits, // New habits are active by default
         'lastActivity': DateTime.now(),
       });
+      
+      return result;
     } catch (e) {
-      // Log error but don't fail the habit creation
-      print('Failed to update user stats: $e');
+      return Left(ServerFailure('Failed to update user stats: $e'));
     }
   }
 
   /// Check for achievements after creating a new habit
-  Future<void> _checkAchievementsAfterHabitCreation(String userId, int totalHabits) async {
+  Future<Either<Failure, List<Achievement>>> _checkAchievementsAfterHabitCreation(String userId, int totalHabits) async {
     try {
       // Check for milestone achievements (like "First Step")
-      await achievementRepository.checkAndUnlockAchievements(userId, {
+      final result = await achievementRepository.checkAndUnlockAchievements(userId, {
         'totalHabits': totalHabits,
         'totalCompletions': 0, // New habit has no completions yet
         'currentStreak': 0, // New habit has no streak yet
         'longestStreak': 0, // New habit has no streak yet
       });
+      
+      return result;
     } catch (e) {
-      // Log error but don't fail the habit creation
-      print('Failed to check achievements: $e');
+      return Left(ServerFailure('Failed to check achievements: $e'));
     }
   }
 

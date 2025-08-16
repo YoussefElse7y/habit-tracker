@@ -51,10 +51,16 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
           (failure) async => Left(failure),
           (savedHabit) async {
             // Update user stats after completing habit
-            await _updateUserStatsAfterHabitCompletion(habit.userId, savedHabit);
+            final statsResult = await _updateUserStatsAfterHabitCompletion(habit.userId, savedHabit);
+            if (statsResult.isLeft()) {
+              print('Warning: Failed to update user stats: ${statsResult.fold((f) => f.message, (_) => '')}');
+            }
             
             // Check for achievements (like streak and completion achievements)
-            await _checkAchievementsAfterHabitCompletion(habit.userId, savedHabit);
+            final achievementResult = await _checkAchievementsAfterHabitCompletion(habit.userId, savedHabit);
+            if (achievementResult.isLeft()) {
+              print('Warning: Failed to check achievements: ${achievementResult.fold((f) => f.message, (_) => '')}');
+            }
             
             return savedHabit;
           },
@@ -64,33 +70,33 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
   }
 
   /// Update user stats after completing a habit
-  Future<void> _updateUserStatsAfterHabitCompletion(String userId, Habit completedHabit) async {
+  Future<Either<Failure, UserStats>> _updateUserStatsAfterHabitCompletion(String userId, Habit completedHabit) async {
     try {
-      await achievementRepository.updateUserStats(userId, {
+      final result = await achievementRepository.updateUserStats(userId, {
         'totalCompletions': completedHabit.totalCompletions,
         'currentStreak': completedHabit.currentStreak,
         'longestStreak': completedHabit.longestStreak,
         'lastActivity': DateTime.now(),
       });
+      return result;
     } catch (e) {
-      // Log error but don't fail the habit completion
-      print('Failed to update user stats: $e');
+      return Left(ServerFailure('Failed to update user stats: $e'));
     }
   }
 
   /// Check for achievements after completing a habit
-  Future<void> _checkAchievementsAfterHabitCompletion(String userId, Habit completedHabit) async {
+  Future<Either<Failure, List<Achievement>>> _checkAchievementsAfterHabitCompletion(String userId, Habit completedHabit) async {
     try {
       // Check for streak and completion achievements
-      await achievementRepository.checkAndUnlockAchievements(userId, {
+      final result = await achievementRepository.checkAndUnlockAchievements(userId, {
         'totalCompletions': completedHabit.totalCompletions,
         'currentStreak': completedHabit.currentStreak,
         'longestStreak': completedHabit.longestStreak,
         'totalHabits': 1, // We'll get this from user stats if needed
       });
+      return result;
     } catch (e) {
-      // Log error but don't fail the habit completion
-      print('Failed to check achievements: $e');
+      return Left(ServerFailure('Failed to check achievements: $e'));
     }
   }
 

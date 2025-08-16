@@ -84,16 +84,31 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
     Map<String, dynamic> progressData,
   ) async {
     try {
+      print('🔍 Checking achievements for user: $userId');
+      print('📊 Progress data: $progressData');
+      
       final allAchievements = AchievementConstants.allAchievements;
       final userAchievements = await getUserAchievements(userId);
       final unlockedAchievementIds = userAchievements.map((a) => a.id).toSet();
       
+      print('🎯 Total achievements available: ${allAchievements.length}');
+      print('✅ Already unlocked: ${unlockedAchievementIds.length}');
+      print('🔒 Locked achievements: ${allAchievements.where((a) => !unlockedAchievementIds.contains(a.id)).length}');
+      
       final newAchievements = <Achievement>[];
 
       for (final achievement in allAchievements) {
-        if (unlockedAchievementIds.contains(achievement.id)) continue;
+        if (unlockedAchievementIds.contains(achievement.id)) {
+          print('⏭️ Skipping already unlocked: ${achievement.title}');
+          continue;
+        }
 
-        if (_shouldUnlockAchievement(achievement, progressData)) {
+        final shouldUnlock = _shouldUnlockAchievement(achievement, progressData);
+        print('🔍 Checking ${achievement.title} (${achievement.type.name}, requirement: ${achievement.requirement}): $shouldUnlock');
+        
+        if (shouldUnlock) {
+          print('🎉 Unlocking achievement: ${achievement.title}');
+          
           // Mark as unlocked
           final unlockedAchievement = achievement.copyWith(
             isUnlocked: true,
@@ -112,11 +127,14 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
 
           // Award points
           await awardPoints(userId, achievement.points, 'Achievement: ${achievement.title}');
+          print('💰 Awarded ${achievement.points} points for: ${achievement.title}');
         }
       }
 
+      print('🎊 Total new achievements unlocked: ${newAchievements.length}');
       return newAchievements;
     } catch (e) {
+      print('❌ Error checking achievements: $e');
       throw Exception('Failed to check achievements: ${e.toString()}');
     }
   }
@@ -171,16 +189,25 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
     Map<String, dynamic> updateData,
   ) async {
     try {
-      final currentStats = await getUserStats(userId);
-      final updatedStats = _applyStatsUpdates(currentStats, updateData);
+      print('📊 Updating user stats for user: $userId');
+      print('📝 Update data: $updateData');
       
+      final currentStats = await getUserStats(userId);
+      print('📊 Current stats: totalHabits=${currentStats.totalHabits}, totalPoints=${currentStats.totalPoints}');
+      
+      final updatedStats = _applyStatsUpdates(currentStats, updateData);
+      print('📊 Updated stats: totalHabits=${updatedStats.totalHabits}, totalPoints=${updatedStats.totalPoints}');
+      
+      // Use set with merge to ensure the document and stats are created if they don't exist
       await firestore
           .collection('users')
           .doc(userId)
-          .update({'stats': updatedStats.toFirestore()});
+          .set({'stats': updatedStats.toFirestore()}, SetOptions(merge: true));
       
+      print('✅ User stats updated successfully');
       return updatedStats;
     } catch (e) {
+      print('❌ Error updating user stats: $e');
       throw Exception('Failed to update user stats: ${e.toString()}');
     }
   }
@@ -410,22 +437,33 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
 
   // Helper method to determine if an achievement should be unlocked
   bool _shouldUnlockAchievement(Achievement achievement, Map<String, dynamic> progressData) {
+    print('🔍 Checking achievement: ${achievement.title} (${achievement.type.name})');
+    print('📊 Progress data for this check: $progressData');
+    
     switch (achievement.type) {
       case AchievementType.streak:
         final currentStreak = progressData['currentStreak'] ?? 0;
-        return currentStreak >= achievement.requirement;
+        final result = currentStreak >= achievement.requirement;
+        print('🔥 Streak check: currentStreak=$currentStreak, requirement=${achievement.requirement}, result=$result');
+        return result;
         
       case AchievementType.completion:
         final totalCompletions = progressData['totalCompletions'] ?? 0;
-        return totalCompletions >= achievement.requirement;
+        final result = totalCompletions >= achievement.requirement;
+        print('✅ Completion check: totalCompletions=$totalCompletions, requirement=${achievement.requirement}, result=$result');
+        return result;
         
       case AchievementType.milestone:
         final totalHabits = progressData['totalHabits'] ?? 0;
-        return totalHabits >= achievement.requirement;
+        final result = totalHabits >= achievement.requirement;
+        print('🏆 Milestone check: totalHabits=$totalHabits, requirement=${achievement.requirement}, result=$result');
+        return result;
         
       case AchievementType.special:
         // Special achievements have custom logic
-        return _checkSpecialAchievement(achievement, progressData);
+        final result = _checkSpecialAchievement(achievement, progressData);
+        print('⭐ Special check: result=$result');
+        return result;
     }
   }
 

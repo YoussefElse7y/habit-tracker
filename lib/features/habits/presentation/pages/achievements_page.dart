@@ -96,6 +96,14 @@ class _AchievementsPageState extends State<AchievementsPage>
             return _buildErrorView(state.message);
           }
 
+          if (state is states.AchievementEmpty) {
+            return _buildEmptyView(state.message);
+          }
+
+          if (state is states.UserAchievementsEmpty) {
+            return _buildEmptyView(state.message);
+          }
+
           return TabBarView(
             controller: _tabController,
             children: [
@@ -159,12 +167,52 @@ class _AchievementsPageState extends State<AchievementsPage>
     );
   }
 
+  Widget _buildEmptyView(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildOverviewTab() {
     final cubit = context.read<AchievementCubit>();
     final userStats = cubit.userStats;
     final totalAchievements = cubit.totalAchievements;
     final unlockedCount = cubit.unlockedCount;
     final completionPercentage = cubit.completionPercentage;
+
+    // Check if we have the necessary data
+    if (userStats == null) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading user stats...'),
+          ],
+        ),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -179,77 +227,76 @@ class _AchievementsPageState extends State<AchievementsPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // User Stats Card
-            if (userStats != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Level ${userStats.currentLevel}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${userStats.totalPoints} points',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        _buildStatItem('Streak', '${userStats.currentStreak}'),
-                        _buildStatItem('Total', '${userStats.totalCompletions}'),
-                        _buildStatItem('Achievements', '$unlockedCount/$totalAchievements'),
-                      ],
-                    ),
-                  ],
-                ),
+                ],
               ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Level ${userStats.currentLevel}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '${userStats.totalPoints} points',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      _buildStatItem('Streak', '${userStats.currentStreak}'),
+                      _buildStatItem('Total', '${userStats.totalCompletions}'),
+                      _buildStatItem('Achievements', '$unlockedCount/$totalAchievements'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 24),
 

@@ -81,12 +81,21 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
   /// Check for achievements after completing a habit
   Future<void> _checkAchievementsAfterHabitCompletion(String userId, Habit completedHabit) async {
     try {
+      // Get current user stats to calculate proper progress
+      final userStats = await achievementRepository.getUserStats(userId);
+      
+      // Calculate total completions across all habits
+      final totalCompletions = userStats.totalCompletions + 1; // Add current completion
+      
       // Check for streak and completion achievements
       await achievementRepository.checkAndUnlockAchievements(userId, {
-        'totalCompletions': completedHabit.totalCompletions,
+        'totalCompletions': totalCompletions,
         'currentStreak': completedHabit.currentStreak,
         'longestStreak': completedHabit.longestStreak,
-        'totalHabits': 1, // We'll get this from user stats if needed
+        'totalHabits': userStats.totalHabits,
+        'weeklyCompletions': totalCompletions, // For perfect week achievement
+        'weeklyTotal': userStats.totalHabits, // For perfect week achievement
+        'completionHour': DateTime.now().hour, // For early bird/night owl achievements
       });
     } catch (e) {
       // Log error but don't fail the habit completion

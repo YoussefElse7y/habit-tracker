@@ -85,17 +85,25 @@ class AddHabit implements UseCase<Habit, AddHabitParams> {
   /// Check for achievements after creating a new habit
   Future<void> _checkAchievementsAfterHabitCreation(String userId, int totalHabits) async {
     try {
+      print('Checking achievements for user $userId with $totalHabits habits');
+      
       // Get current user stats to calculate proper progress
       final userStats = await achievementRepository.getUserStats(userId);
+      print('Current user stats: totalHabits=${userStats.totalHabits}, totalCompletions=${userStats.totalCompletions}');
       
       // Check for milestone achievements (like "First Step")
-      await achievementRepository.checkAndUnlockAchievements(userId, {
+      final newAchievements = await achievementRepository.checkAndUnlockAchievements(userId, {
         'totalHabits': totalHabits,
         'totalCompletions': userStats.totalCompletions,
         'currentStreak': userStats.currentStreak,
         'longestStreak': userStats.longestStreak,
         'activeHabits': totalHabits,
       });
+      
+      print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
+      if (newAchievements.isNotEmpty) {
+        print('New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
+      }
     } catch (e) {
       // Log error but don't fail the habit creation
       print('Failed to check achievements: $e');

@@ -103,8 +103,14 @@ Future<void> init() async {
     ),
   );
 
-  sl.registerLazySingleton(() => AddHabit(sl()));
-  sl.registerLazySingleton(() => CompleteHabit(sl()));
+  sl.registerLazySingleton(() => AddHabit(
+    habitRepository: sl(),
+    achievementRepository: sl(),
+  ));
+  sl.registerLazySingleton(() => CompleteHabit(
+    habitRepository: sl(),
+    achievementRepository: sl(),
+  ));
 
   sl.registerLazySingleton<HabitRepository>(
     () => HabitRepositoryImpl(

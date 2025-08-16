@@ -99,7 +99,7 @@ class AddHabit implements UseCase<Habit, AddHabitParams> {
           print('Current user stats: totalHabits=${userStats.totalHabits}, totalCompletions=${userStats.totalCompletions}');
           
           // Check for milestone achievements (like "First Step")
-          final newAchievements = await achievementRepository.checkAndUnlockAchievements(userId, {
+          final newAchievementsResult = await achievementRepository.checkAndUnlockAchievements(userId, {
             'totalHabits': totalHabits,
             'totalCompletions': userStats.totalCompletions,
             'currentStreak': userStats.currentStreak,
@@ -107,10 +107,17 @@ class AddHabit implements UseCase<Habit, AddHabitParams> {
             'activeHabits': totalHabits,
           });
           
-          print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
-          if (newAchievements.isNotEmpty) {
-            print('New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
-          }
+          newAchievementsResult.fold(
+            (failure) {
+              print('Failed to check achievements: $failure');
+            },
+            (newAchievements) {
+              print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
+              if (newAchievements.isNotEmpty) {
+                print('New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
+              }
+            },
+          );
         },
       );
     } catch (e) {

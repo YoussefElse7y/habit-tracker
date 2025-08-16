@@ -99,7 +99,7 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
           print('Total completions after this completion: $totalCompletions');
           
           // Check for streak and completion achievements
-          final newAchievements = await achievementRepository.checkAndUnlockAchievements(userId, {
+          final newAchievementsResult = await achievementRepository.checkAndUnlockAchievements(userId, {
             'totalCompletions': totalCompletions,
             'currentStreak': completedHabit.currentStreak,
             'longestStreak': completedHabit.longestStreak,
@@ -109,10 +109,17 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
             'completionHour': DateTime.now().hour, // For early bird/night owl achievements
           });
           
-          print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
-          if (newAchievements.isNotEmpty) {
-            print('New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
-          }
+          newAchievementsResult.fold(
+            (failure) {
+              print('Failed to check achievements: $failure');
+            },
+            (newAchievements) {
+              print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
+              if (newAchievements.isNotEmpty) {
+                print('New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
+              }
+            },
+          );
         },
       );
     } catch (e) {

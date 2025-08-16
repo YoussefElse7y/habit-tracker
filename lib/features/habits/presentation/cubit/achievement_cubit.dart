@@ -55,8 +55,12 @@ class AchievementCubit extends Cubit<AchievementState> {
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (achievements) {
-        _allAchievements = achievements;
-        emit(AllAchievementsLoaded(achievements: achievements));
+        if (achievements.isEmpty) {
+          emit(const AchievementEmpty(message: 'No achievements available'));
+        } else {
+          _allAchievements = achievements;
+          emit(AllAchievementsLoaded(achievements: achievements));
+        }
       },
     );
   }
@@ -76,8 +80,12 @@ class AchievementCubit extends Cubit<AchievementState> {
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
       (achievements) {
-        _unlockedAchievements = achievements;
-        emit(UserAchievementsLoaded(achievements: achievements));
+        if (achievements.isEmpty) {
+          emit(const UserAchievementsEmpty(message: 'No achievements unlocked yet'));
+        } else {
+          _unlockedAchievements = achievements;
+          emit(UserAchievementsLoaded(achievements: achievements));
+        }
       },
     );
   }
@@ -171,9 +179,21 @@ class AchievementCubit extends Cubit<AchievementState> {
     ));
     result.fold(
       (failure) => emit(AchievementError(message: failure.message)),
-      (newAchievements) {
-        _unlockedAchievements.addAll(newAchievements);
-        emit(AchievementsUnlocked(achievements: newAchievements));
+      (newAchievements) async {
+        if (newAchievements.isNotEmpty) {
+          _unlockedAchievements.addAll(newAchievements);
+          emit(AchievementsUnlocked(achievements: newAchievements));
+          
+          // Refresh user stats and achievements after unlocking achievements
+          await loadUserStats(userId);
+          await loadUserAchievements(userId);
+          await loadAchievementProgress(userId);
+        } else {
+          // Even if no new achievements, refresh progress
+          await loadUserStats(userId);
+          await loadUserAchievements(userId);
+          await loadAchievementProgress(userId);
+        }
       },
     );
   }
@@ -291,6 +311,8 @@ class AchievementCubit extends Cubit<AchievementState> {
       // Emit success state when all is loaded
       if (_userStats != null) {
         emit(UserStatsLoaded(_userStats!));
+      } else {
+        emit(const AchievementError(message: 'Failed to load user stats'));
       }
     } catch (e) {
       emit(AchievementError(message: 'Failed to refresh data: ${e.toString()}'));
@@ -316,9 +338,14 @@ class AchievementCubit extends Cubit<AchievementState> {
     
     return {
       'currentStreak': _userStats!.currentStreak,
+      'longestStreak': _userStats!.longestStreak,
       'totalCompletions': _userStats!.totalCompletions,
       'totalHabits': _userStats!.totalHabits,
+      'activeHabits': _userStats!.activeHabits,
       'totalPoints': _userStats!.totalPoints,
+      'currentLevel': _userStats!.currentLevel,
+      'totalAchievements': _userStats!.totalAchievements,
+      'unlockedAchievements': _userStats!.unlockedAchievements,
     };
   }
 
@@ -410,13 +437,17 @@ class AchievementCubit extends Cubit<AchievementState> {
     
     switch (achievement.type) {
       case AchievementType.streak:
-        return _userStats!.currentStreak;
+        // Use the higher of current or longest streak
+        return _userStats!.currentStreak > _userStats!.longestStreak 
+            ? _userStats!.currentStreak 
+            : _userStats!.longestStreak;
       case AchievementType.completion:
         return _userStats!.totalCompletions;
       case AchievementType.milestone:
         return _userStats!.totalHabits;
       case AchievementType.special:
-        return 0; // Special achievements have custom logic
+        // For special achievements, return 0 as they have custom logic
+        return 0;
     }
   }
 

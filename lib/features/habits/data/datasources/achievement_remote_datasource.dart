@@ -413,7 +413,10 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
     switch (achievement.type) {
       case AchievementType.streak:
         final currentStreak = progressData['currentStreak'] ?? 0;
-        return currentStreak >= achievement.requirement;
+        final longestStreak = progressData['longestStreak'] ?? 0;
+        // Use the higher of current or longest streak for streak achievements
+        final streakValue = currentStreak > longestStreak ? currentStreak : longestStreak;
+        return streakValue >= achievement.requirement;
         
       case AchievementType.completion:
         final totalCompletions = progressData['totalCompletions'] ?? 0;
@@ -449,6 +452,15 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
       case 'night_owl':
         final completionHour = progressData['completionHour'] ?? 12;
         return completionHour > 22;
+        
+      case 'weekend_warrior':
+        final now = DateTime.now();
+        final isWeekend = now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
+        return isWeekend;
+        
+      case 'holiday_hero':
+        // For now, just return false as holiday detection would need more complex logic
+        return false;
         
       default:
         return false;

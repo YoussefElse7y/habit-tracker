@@ -267,6 +267,45 @@ class _TestAchievementsPageState extends State<TestAchievementsPage> {
                         const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () {
+                            // Manually update user stats to test
+                            final currentUser = FirebaseAuth.instance.currentUser;
+                            final userId = currentUser?.uid ?? 'test_user_id';
+                            
+                            print('Manually updating user stats for: $userId');
+                            // This would need to be implemented in the achievement cubit
+                            // For now, just show a message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Manual stats update not implemented yet. Check console logs for debugging info.'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          },
+                          child: const Text('Manual Update User Stats'),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Test the First Step achievement specifically
+                            final currentUser = FirebaseAuth.instance.currentUser;
+                            final userId = currentUser?.uid ?? 'test_user_id';
+                            
+                            print('Testing First Step achievement for user: $userId');
+                            context.read<AchievementCubit>().checkAndUnlockAchievements(
+                              userId,
+                              {
+                                'totalHabits': 1,
+                                'totalCompletions': 0,
+                                'currentStreak': 0,
+                                'longestStreak': 0,
+                              },
+                            );
+                          },
+                          child: const Text('Test First Step Achievement (1 habit)'),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
                             // Test achievement checking with sample data
                             final currentUser = FirebaseAuth.instance.currentUser;
                             final userId = currentUser?.uid ?? 'test_user_id';

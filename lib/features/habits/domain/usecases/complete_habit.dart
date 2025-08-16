@@ -81,14 +81,18 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
   /// Check for achievements after completing a habit
   Future<void> _checkAchievementsAfterHabitCompletion(String userId, Habit completedHabit) async {
     try {
+      print('Checking achievements after habit completion for user $userId');
+      
       // Get current user stats to calculate proper progress
       final userStats = await achievementRepository.getUserStats(userId);
+      print('Current user stats: totalHabits=${userStats.totalHabits}, totalCompletions=${userStats.totalCompletions}');
       
       // Calculate total completions across all habits
       final totalCompletions = userStats.totalCompletions + 1; // Add current completion
+      print('Total completions after this completion: $totalCompletions');
       
       // Check for streak and completion achievements
-      await achievementRepository.checkAndUnlockAchievements(userId, {
+      final newAchievements = await achievementRepository.checkAndUnlockAchievements(userId, {
         'totalCompletions': totalCompletions,
         'currentStreak': completedHabit.currentStreak,
         'longestStreak': completedHabit.longestStreak,
@@ -97,6 +101,11 @@ class CompleteHabit implements UseCase<Habit, CompleteHabitParams> {
         'weeklyTotal': userStats.totalHabits, // For perfect week achievement
         'completionHour': DateTime.now().hour, // For early bird/night owl achievements
       });
+      
+      print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
+      if (newAchievements.isNotEmpty) {
+        print('New achievements: ${newAchievements.map((a) => a.title).join(', ')}');
+      }
     } catch (e) {
       // Log error but don't fail the habit completion
       print('Failed to check achievements: $e');

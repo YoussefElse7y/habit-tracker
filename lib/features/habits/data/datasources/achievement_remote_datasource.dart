@@ -84,16 +84,27 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
     Map<String, dynamic> progressData,
   ) async {
     try {
+      print('Starting achievement check for user $userId');
+      print('Progress data received: $progressData');
+      
       final allAchievements = AchievementConstants.allAchievements;
+      print('Total available achievements: ${allAchievements.length}');
+      
       final userAchievements = await getUserAchievements(userId);
       final unlockedAchievementIds = userAchievements.map((a) => a.id).toSet();
+      print('User already has ${userAchievements.length} achievements: ${unlockedAchievementIds.join(', ')}');
       
       final newAchievements = <Achievement>[];
 
       for (final achievement in allAchievements) {
-        if (unlockedAchievementIds.contains(achievement.id)) continue;
+        if (unlockedAchievementIds.contains(achievement.id)) {
+          print('Achievement ${achievement.title} already unlocked, skipping');
+          continue;
+        }
 
         if (_shouldUnlockAchievement(achievement, progressData)) {
+          print('Unlocking achievement: ${achievement.title}');
+          
           // Mark as unlocked
           final unlockedAchievement = achievement.copyWith(
             isUnlocked: true,
@@ -112,11 +123,14 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
 
           // Award points
           await awardPoints(userId, achievement.points, 'Achievement: ${achievement.title}');
+          print('Awarded ${achievement.points} points for achievement: ${achievement.title}');
         }
       }
 
+      print('Achievement check completed. New achievements unlocked: ${newAchievements.length}');
       return newAchievements;
     } catch (e) {
+      print('Error during achievement check: $e');
       throw Exception('Failed to check achievements: ${e.toString()}');
     }
   }
@@ -410,25 +424,36 @@ class AchievementRemoteDataSourceImpl implements AchievementRemoteDataSource {
 
   // Helper method to determine if an achievement should be unlocked
   bool _shouldUnlockAchievement(Achievement achievement, Map<String, dynamic> progressData) {
+    print('Checking achievement: ${achievement.title} (${achievement.id})');
+    print('Progress data: $progressData');
+    
     switch (achievement.type) {
       case AchievementType.streak:
         final currentStreak = progressData['currentStreak'] ?? 0;
         final longestStreak = progressData['longestStreak'] ?? 0;
         // Use the higher of current or longest streak for streak achievements
         final streakValue = currentStreak > longestStreak ? currentStreak : longestStreak;
-        return streakValue >= achievement.requirement;
+        final shouldUnlock = streakValue >= achievement.requirement;
+        print('Streak achievement: requirement=${achievement.requirement}, current=$currentStreak, longest=$longestStreak, shouldUnlock=$shouldUnlock');
+        return shouldUnlock;
         
       case AchievementType.completion:
         final totalCompletions = progressData['totalCompletions'] ?? 0;
-        return totalCompletions >= achievement.requirement;
+        final shouldUnlock = totalCompletions >= achievement.requirement;
+        print('Completion achievement: requirement=${achievement.requirement}, totalCompletions=$totalCompletions, shouldUnlock=$shouldUnlock');
+        return shouldUnlock;
         
       case AchievementType.milestone:
         final totalHabits = progressData['totalHabits'] ?? 0;
-        return totalHabits >= achievement.requirement;
+        final shouldUnlock = totalHabits >= achievement.requirement;
+        print('Milestone achievement: requirement=${achievement.requirement}, totalHabits=$totalHabits, shouldUnlock=$shouldUnlock');
+        return shouldUnlock;
         
       case AchievementType.special:
         // Special achievements have custom logic
-        return _checkSpecialAchievement(achievement, progressData);
+        final shouldUnlock = _checkSpecialAchievement(achievement, progressData);
+        print('Special achievement: shouldUnlock=$shouldUnlock');
+        return shouldUnlock;
     }
   }
 
